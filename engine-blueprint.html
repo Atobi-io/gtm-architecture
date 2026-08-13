@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Engine Pattern · the reusable engine blueprint</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',-apple-system,sans-serif; background:#0a0a0f; color:#e0e0e8; padding:40px; min-height:100vh; }
+  .page { max-width:1100px; margin:0 auto; }
+  code { font-family:'SF Mono',Menlo,monospace; font-size:12px; color:#2dd4bf; background:rgba(45,212,191,0.08); padding:1px 6px; border-radius:3px; }
+
+  .header { text-align:center; margin-bottom:40px; }
+  .header::after { content:''; display:block; width:80px; height:3px; background:linear-gradient(90deg,#2dd4bf,#7ee0d8); margin:20px auto 0; border-radius:2px; }
+  .logo { font-size:14px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#2dd4bf; margin-bottom:8px; }
+  .header h1 { font-size:36px; font-weight:800; color:#fff; letter-spacing:-0.5px; }
+  .header .subtitle { font-size:15px; color:#888; margin-top:8px; }
+  .header .date { font-size:12px; color:#555; margin-top:6px; }
+
+  .context-box { background:linear-gradient(135deg,#0f2422 0%,#132e29 100%); border-radius:16px; padding:24px 30px; margin-bottom:40px; border:1px solid rgba(45,212,191,0.2); }
+  .context-box p { font-size:14.5px; color:#ccc; line-height:1.7; margin-bottom:10px; }
+  .context-box p:last-child { margin-bottom:0; }
+  .context-box strong { color:#7ee0d8; }
+  .context-box ol, .context-box ul { margin:0 0 14px 22px; }
+  .context-box li { font-size:13.5px; color:#c5cad7; line-height:1.65; margin-bottom:7px; }
+  .context-box li:last-child { margin-bottom:0; }
+  .context-box li strong { color:#7ee0d8; }
+
+  .part-banner { text-align:center; margin:60px -40px 48px; padding:44px 40px; border-top:2px solid rgba(45,212,191,0.32); border-bottom:2px solid rgba(45,212,191,0.32); background:linear-gradient(135deg,#0f2422 0%,#132e29 100%); }
+  .part-banner .tag { display:inline-block; font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; margin-bottom:12px; padding:6px 16px; border-radius:20px; color:#2dd4bf; background:rgba(45,212,191,0.14); }
+  .part-banner h2 { font-size:32px; font-weight:900; color:#fff; letter-spacing:-0.6px; margin-bottom:10px; }
+  .part-banner p { font-size:14px; color:#b8bdce; max-width:640px; margin:0 auto; line-height:1.6; }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .card { padding:20px 22px; border-radius:12px; background:linear-gradient(135deg,#111820,#131c24); border:1px solid rgba(45,212,191,0.16); }
+  .card .kicker { font-size:9px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#2dd4bf; margin-bottom:4px; }
+  .card h4 { font-size:15px; font-weight:700; color:#fff; margin-bottom:10px; }
+  .card ul { list-style:none; }
+  .card li { font-size:12.5px; color:#b8bdce; line-height:1.6; padding:7px 0; border-top:1px solid rgba(255,255,255,0.05); }
+  .card li:first-child { border-top:none; }
+  .card li strong { color:#e8eaf2; }
+
+  .consequence { font-size:13.5px; color:#c8e8e2; background:rgba(45,212,191,0.07); border:1px solid rgba(45,212,191,0.22); border-radius:10px; padding:16px 20px; margin-top:22px; line-height:1.65; }
+  .consequence strong { color:#7ee0d8; }
+
+  .footer { text-align:center; padding-top:20px; border-top:1px solid rgba(255,255,255,0.05); color:#555; font-size:11px; margin-top:40px; line-height:1.7; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="logo">engine blueprint</div>
+    <h1>The Engine Pattern</h1>
+    <div class="subtitle">The reusable blueprint for building engines in any domain</div>
+    <div class="date">Distilled from gtm-engine-architecture-v3.2 · 2026-07-24</div>
+  </div>
+
+  <div class="context-box">
+    <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2dd4bf;margin:0 0 8px;">What this is</div>
+    <p>The generic blueprint for building engines: the core structures every engine is built from, and where the pattern fits. Use it when designing an engine for a new domain.</p>
+  </div>
+
+  <div class="part-banner">
+    <div class="tag">The fit</div>
+    <h2>Where It Fits</h2>
+    <p>Each structure in the blueprint pays off only under certain conditions. Together they draw a precise map of where an engine is worth building.</p>
+  </div>
+
+  <div class="context-box">
+    <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2dd4bf;margin:0 0 8px;">The four conditions</div>
+    <p>Four conditions decide the fit. None of them is a hard requirement, but the more of them hold, the more of the pattern pays off:</p>
+    <ol>
+      <li><strong>One body of knowledge, many outputs.</strong> Foundation is expensive to build and cheap to read. It pays off only where many outputs draw on the same slowly-changing knowledge (voice, positioning, audience, proof). If every task needs fresh, unique knowledge, Foundation gives no leverage.</li>
+      <li><strong>Rhythm, not one-offs.</strong> Cron, queue, cadence plans and catch-up logic are built for recurring work. The value accumulates per repetition; a one-off project never amortises the setup cost.</li>
+      <li><strong>Output that represents someone.</strong> The voice layers, the voice gate and the humanizer exist because the output goes out into the world and sounds like a person or a brand. If the output is purely transactional (invoices, data extracts), the gates are overkill and simpler automation wins.</li>
+      <li><strong>Lasting relationships with observable reactions.</strong> Signal harvesting and accumulating scores assume the same recipients recur and their reactions can be seen. Without recurring relationships or a feedback channel, the whole signal layer stands still.</li>
+    </ol>
+    <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2dd4bf;margin:18px 0 8px;">Three levels of fit</div>
+    <ul>
+      <li><strong>Full fit (all four):</strong> go-to-market, customer success, content and brand, employer branding, partner and investor communication. The shared shape: one knowledge base, many sends, recurring recipients, measurable reactions.</li>
+      <li><strong>Partial fit:</strong> a strategy engine is strong on knowledge + production + the learning loop, but the delivery and signal layers sit nearly idle (low cadence, internal audience). Async support (tickets) can fit; real-time dialogue cannot.</li>
+      <li><strong>Poor fit:</strong> one-off deliverables, real-time conversation, and output where correctness dominates over voice.</li>
+    </ul>
+    <p><strong>The litmus test:</strong> does the function repeatedly turn one body of knowledge into communication to people whose reactions it can learn from? Then it is engine-shaped.</p>
+  </div>
+
+  <div class="part-banner">
+    <div class="tag">The blueprint</div>
+    <h2>The Core Structures</h2>
+    <p>Six groups of building blocks every engine is assembled from: what it is, how it is governed, why its output is good, how it sees, why it lasts, and what makes it reusable.</p>
+  </div>
+
+  <div class="grid2">
+
+    <div class="card">
+      <div class="kicker">Anatomy</div>
+      <h4>What an engine IS</h4>
+      <ul>
+        <li><strong>Foundation as the read-surface.</strong> All knowledge about the subject (voice, positioning, audiences, proof) lives in one place, and every skill reads from it at runtime. Nothing is hardcoded.</li>
+        <li><strong>Three layers: Knowledge &rarr; Production &rarr; Delivery.</strong> What the engine knows, what it produces, and how it reaches the recipient are strictly separated, so each layer can be improved without touching the others.</li>
+        <li><strong>One unit of work, no special cases.</strong> Everything the engine drives is the same kind of object with the same contract chain (brief + plan), in only two variants: timebound or ongoing. So all mechanics (queue, portfolio, reporting) work on everything, and the engine does not grow in complexity as initiatives are added.</li>
+        <li><strong>Contracts between the layers.</strong> Each layer hands over a defined format to the next, never loose text. So the layers can be developed and tested independently.</li>
+        <li><strong>New channels are built from a template.</strong> A new output channel is made by copying a fixed pattern and filling in the channel&rsquo;s details, not by writing new engine code. That makes adding output channels very easy.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="kicker">Human + machine</div>
+      <h4>How it is governed</h4>
+      <ul>
+        <li><strong>The approval queue as the single meeting point.</strong> The engine produces, the human approves in one surface, and nothing goes out without approval where it matters.</li>
+        <li><strong>Approval has one home.</strong> One field in one file is the truth about &ldquo;approved&rdquo;; everything else is a mirror. No double bookkeeping.</li>
+        <li><strong>The learning loop.</strong> The human&rsquo;s corrections graduate into Foundation via skills, so the engine gets better from being corrected instead of repeating the mistake.</li>
+        <li><strong>Roles and authority.</strong> Owner, coordinator and operators with clear boundaries for who may do what. Scales from one person to a team.</li>
+        <li><strong>Portfolio management.</strong> Hard ceilings and overlap checks across active initiatives, so multiple initiatives do not cannibalise each other.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="kicker">Voice and quality</div>
+      <h4>Why the output is good</h4>
+      <ul>
+        <li><strong>Two-layer voice.</strong> Voices are separate artefacts layered on top of each other: company + person (the operator sounds like themselves, grounded in the company&rsquo;s voice) or company + brand (the company writes as itself, but within a brand&rsquo;s guidelines). All output sounds like a human, not like &ldquo;the system&rdquo;.</li>
+        <li><strong>Voice gate on all output.</strong> Nothing leaves the production layer without being checked against the voice profile and its anti-patterns.</li>
+        <li><strong>Humanizer as a fixed step.</strong> The de-AI pass is part of the contract, not an afterthought.</li>
+        <li><strong>Recipient verification before sending.</strong> The engine double-checks that what it sends goes to the right person. Never the wrong one.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="kicker">Signal and intelligence</div>
+      <h4>How it sees</h4>
+      <ul>
+        <li><strong>Signal harvesting from the outside world.</strong> The engine picks up reactions to what it sends out, evaluates them against its knowledge of what matters for that particular engine, and surfaces what deserves action as suggestions to the human.</li>
+        <li><strong>Scores that accumulate over time.</strong> Signals are logged per relationship, so patterns become visible instead of forgotten between sessions.</li>
+        <li><strong>Relationship state is coded knowledge.</strong> The engine knows who is new, active or a past relationship, and behaves differently towards each.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="kicker">Operations and robustness</div>
+      <h4>Why it lasts</h4>
+      <ul>
+        <li><strong>Runs on its own schedule.</strong> Cron-driven, headless, with notifications when there is something new for the human. The engine does not wait for anyone to remember it.</li>
+        <li><strong>Auto-delivery with per-channel gates.</strong> Approved output is delivered automatically; each channel has its own gate that can be opened gradually as trust grows.</li>
+        <li><strong>Write boundaries enforced by hooks.</strong> Knowledge artefacts cannot be hand-edited, and engine code cannot be changed outside the build discipline. Discipline is code, not agreements.</li>
+        <li><strong>Migrations register + versioning.</strong> Every installed instance is updated with numbered, idempotent steps. One engine core, several instances, all in sync.</li>
+        <li><strong>Build queue.</strong> Ideas are captured as specs and built serially in a dedicated build session, so development never disturbs operations.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="kicker">The design principles</div>
+      <h4>What makes it reusable</h4>
+      <ul>
+        <li><strong>Subject-agnostic by design.</strong> The engine does not know its subject; it reads it at runtime. Same engine + new Foundation = new engine.</li>
+        <li><strong>Knowledge separated from mechanics.</strong> Everything domain-specific lives in knowledge artefacts, all mechanics in skills. So the mechanics can be reused 1:1 across domains.</li>
+        <li><strong>The ownership rule.</strong> Everything the engine depends on, it owns itself; shared utilities are composed. No silent breakage from outside.</li>
+        <li><strong>General solutions, never point-in-time.</strong> Every feature is built as the general case, so the next engine inherits it for free.</li>
+        <li><strong>The architecture learns across engines.</strong> The engine is one shared core, and every engine is an instance of it. When work on one engine makes us smarter, the improvement is built into the core and rolled out to the others via versioned updates. Learning in one place lifts all.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="consequence"><strong>The consequence:</strong> a new engine is a new Foundation plus a selection of channels, not a new system. The mechanics, the discipline and the learning loops come along from day one.</div>
+
+  <div class="footer">Engine Blueprint · domain-neutral pattern distilled from the GTM Engine architecture (gtm-engine-architecture-v3.2.html) · 2026-07-24</div>
+
+</div>
+</body>
+</html>

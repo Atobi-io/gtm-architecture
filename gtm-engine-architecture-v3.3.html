@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTM Engine — Architecture Model (v3.3)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',-apple-system,sans-serif; background:#0a0a0f; color:#e0e0e8; padding:40px; min-height:100vh; }
+  .page { max-width:1340px; margin:0 auto; }
+  code { font-family:'SF Mono',Menlo,monospace; font-size:12px; color:#fb923c; background:rgba(249,115,22,0.08); padding:1px 6px; border-radius:3px; }
+
+  .header { text-align:center; margin-bottom:40px; }
+  .header::after { content:''; display:block; width:80px; height:3px; background:linear-gradient(90deg,#f97316,#fb923c); margin:20px auto 0; border-radius:2px; }
+  .logo { font-size:14px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#f97316; margin-bottom:8px; }
+  .header h1 { font-size:36px; font-weight:800; color:#fff; letter-spacing:-0.5px; }
+  .header .subtitle { font-size:15px; color:#888; margin-top:8px; }
+  .header .date { font-size:12px; color:#555; margin-top:6px; }
+  .header .vbadge { display:inline-block; margin-top:12px; padding:4px 12px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; background:rgba(249,115,22,0.15); color:#fb923c; border-radius:20px; }
+
+  .context-box { background:linear-gradient(135deg,#1a1612 0%,#211a14 100%); border-radius:16px; padding:24px 30px; margin-bottom:34px; border:1px solid rgba(249,115,22,0.12); }
+  .context-box p { font-size:14px; color:#ccc; line-height:1.7; margin-bottom:10px; }
+  .context-box p:last-child { margin-bottom:0; }
+  .context-box strong { color:#fb923c; }
+
+  .lane-nav { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:56px; }
+  @media (max-width:768px){ .lane-nav{ grid-template-columns:1fr; } }
+  .lane-card { border-radius:16px; padding:26px 30px; }
+  .lane-concept { background:linear-gradient(135deg,#16213e 0%,#1a1a2e 100%); border:1px solid rgba(96,165,250,0.22); }
+  .lane-tech { background:linear-gradient(135deg,#1a1326 0%,#1f1830 100%); border:1px solid rgba(192,132,252,0.22); }
+  .lane-label { font-size:10px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:8px; }
+  .lane-concept .lane-label { color:#60a5fa; }
+  .lane-tech .lane-label { color:#c084fc; }
+  .lane-card h3 { font-size:18px; font-weight:700; color:#fff; margin-bottom:10px; }
+  .lane-card p { font-size:13px; color:#aab0c2; line-height:1.6; margin-bottom:12px; }
+  .lane-card .aud { font-size:12px; color:#888; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); }
+  .lane-card .aud strong { color:#ddd; }
+
+  .part-banner { text-align:center; margin:80px -40px 52px; padding:48px 40px; border-top:2px solid; border-bottom:2px solid; }
+  .part-banner.concept { background:linear-gradient(135deg,#16213e 0%,#1a2742 100%); border-color:rgba(96,165,250,0.32); }
+  .part-banner.tech { background:linear-gradient(135deg,#1a1326 0%,#1f1830 100%); border-color:rgba(192,132,252,0.32); }
+  .part-banner .tag { display:inline-block; font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; margin-bottom:12px; padding:6px 16px; border-radius:20px; }
+  .part-banner.concept .tag { color:#60a5fa; background:rgba(96,165,250,0.14); }
+  .part-banner.tech .tag { color:#c084fc; background:rgba(192,132,252,0.14); }
+  .part-banner h2 { font-size:32px; font-weight:900; color:#fff; letter-spacing:-0.6px; margin-bottom:10px; }
+  .part-banner p { font-size:14px; color:#b8bdce; max-width:640px; margin:0 auto; line-height:1.6; }
+
+  .section { margin-bottom:48px; }
+  .section > .num { display:inline-block; font-size:10px; font-weight:800; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:8px; padding:4px 12px; border-radius:20px; }
+  .concept .section > .num { color:#60a5fa; background:rgba(96,165,250,0.1); }
+  .tech .section > .num { color:#c084fc; background:rgba(192,132,252,0.1); }
+  .section > h3 { font-size:23px; font-weight:800; color:#fff; letter-spacing:-0.3px; margin-bottom:12px; }
+  .section > .lede { font-size:14.5px; color:#c8c8d4; line-height:1.7; margin-bottom:22px; max-width:840px; }
+  .section > .lede strong { color:#fff; }
+  .lede-bullets { list-style:none; margin:0 0 22px; max-width:840px; display:flex; flex-direction:column; gap:7px; }
+  .lede-bullets li { font-size:14.5px; color:#c8c8d4; line-height:1.6; padding-left:18px; position:relative; }
+  .lede-bullets li::before { content:''; position:absolute; left:0; top:9px; width:6px; height:6px; border-radius:50%; }
+  .concept .lede-bullets li::before { background:#60a5fa; }
+  .tech .lede-bullets li::before { background:#c084fc; }
+  .lede-bullets li strong { color:#fff; }
+  .straddle { font-size:12px; color:#fbbf24; background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.2); border-radius:8px; padding:8px 14px; margin-bottom:20px; display:inline-block; }
+  .straddle strong { color:#fde68a; }
+  .straddle em { color:#fcd34d; font-style:italic; }
+
+  .hier { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
+  .lvl { display:grid; grid-template-columns:34px 1fr; gap:14px; align-items:start; padding:14px 16px; border-radius:0 10px 10px 0; background:rgba(96,165,250,0.04); border-left:3px solid #60a5fa; }
+  .lvl .n { font-family:'SF Mono',monospace; font-size:12px; font-weight:700; color:#60a5fa; }
+  .lvl .b strong { display:block; color:#fff; font-size:14px; margin-bottom:2px; }
+  .lvl .b span { font-size:13px; color:#aab0c2; }
+  .lvl.setup { opacity:0.6; }
+  .hier-note { margin-top:12px; font-size:12px; color:#88909e; font-style:italic; }
+
+  .modes { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:8px 0; }
+  @media (max-width:760px){ .modes{ grid-template-columns:1fr; } }
+  .mode { padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); }
+  .mode.f { background:linear-gradient(135deg,#1b2418,#1e2a1c); border-color:rgba(74,222,128,0.22); }
+  .mode.m1 { background:linear-gradient(135deg,#16213e,#1a2742); border-color:rgba(96,165,250,0.22); }
+  .mode.m2 { background:linear-gradient(135deg,#1a1326,#1f1830); border-color:rgba(192,132,252,0.22); }
+  .mode .ml { font-size:9px; font-weight:800; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+  .mode.f .ml { color:#4ade80; } .mode.m1 .ml { color:#60a5fa; } .mode.m2 .ml { color:#c084fc; }
+  .mode h4 { font-size:15px; font-weight:700; color:#fff; margin-bottom:8px; }
+  .mode .p { font-size:12.5px; color:#aab0c2; font-style:italic; margin-bottom:8px; }
+  .mode .d { font-size:12.5px; color:#c5cad7; line-height:1.6; }
+  .mode .cad { margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); font-size:11px; color:#888; }
+
+  .funnel { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
+  .fstage { display:grid; grid-template-columns:30px 1fr; gap:14px; padding:13px 16px; background:rgba(96,165,250,0.04); border-left:3px solid #60a5fa; border-radius:0 8px 8px 0; }
+  .fstage .fn { font-family:'SF Mono',monospace; font-size:12px; font-weight:700; color:#60a5fa; }
+  .fstage strong { color:#fff; font-size:13.5px; }
+  .fstage span { display:block; font-size:12.5px; color:#aab0c2; margin-top:2px; }
+  .gate { text-align:center; font-size:12px; color:#fbbf24; padding:6px; letter-spacing:1px; }
+
+  .inflows { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin:8px 0 0; align-items:start; }
+  @media (max-width:760px){ .inflows{ grid-template-columns:1fr; } }
+  .inflow-col .ih { font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
+  .inflow-col .isub { font-size:12px; color:#88909e; line-height:1.5; margin-bottom:13px; }
+  .inflow-col.primary .ih { color:#2dd4bf; }
+  .inflow-col.emergent .ih { color:#60a5fa; }
+  .inflow-col.primary .fstage { border-left-color:#2dd4bf; background:rgba(45,212,191,0.05); }
+  .inflow-col.primary .fstage .fn { color:#2dd4bf; }
+  .converge { text-align:center; font-size:11px; color:#888; letter-spacing:1px; margin:14px 0 8px; }
+  .activation-bar { padding:16px 20px; border-radius:10px; background:linear-gradient(135deg,#1a1326,#1f1830); border:1px solid rgba(192,132,252,0.3); }
+  .activation-bar strong { color:#fff; font-size:14px; }
+  .activation-bar span { display:block; font-size:12.5px; color:#c5cad7; margin-top:4px; }
+
+  .caps { display:flex; flex-direction:column; gap:10px; margin:8px 0; }
+  .cap { display:grid; grid-template-columns:1fr 18px 220px; gap:12px; align-items:center; padding:14px 16px; background:rgba(96,165,250,0.04); border-left:3px solid #60a5fa; border-radius:0 8px 8px 0; }
+  @media (max-width:760px){ .cap{ grid-template-columns:1fr; } .cap .arrow{ display:none; } }
+  .cap .capn { font-size:13.5px; color:#e8eaf2; } .cap .capn strong { color:#fff; }
+  .cap .capn span { display:block; font-size:12px; color:#aab0c2; margin-top:3px; }
+  .cap .arrow { text-align:center; color:#60a5fa; }
+  .cap .art { font-family:'SF Mono',monospace; font-size:12px; color:#fb923c; }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:8px 0; }
+  @media (max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .card { padding:18px 20px; border-radius:12px; background:linear-gradient(135deg,#13182a,#161c2f); border:1px solid rgba(255,255,255,0.06); }
+  .tech .card { border-color:rgba(192,132,252,0.12); }
+  .card h4 { font-size:14px; font-weight:700; color:#fff; margin-bottom:8px; }
+  .card ul { list-style:none; }
+  .card li { font-size:12.5px; color:#b8bdce; line-height:1.5; padding:4px 0; border-top:1px solid rgba(255,255,255,0.04); }
+  .card li:first-child { border-top:none; }
+  .card li strong { color:#e8eaf2; }
+
+  .tree { font-family:'SF Mono',Menlo,monospace; font-size:12px; line-height:1.8; background:#0d0d14; border-radius:10px; padding:22px 24px; margin:8px 0; border:1px solid rgba(192,132,252,0.12); overflow-x:auto; white-space:pre; color:#d8dde8; }
+  .tree .d { color:#c084fc; font-weight:600; }
+  .tree .c { color:#5a5e6e; font-style:italic; }
+
+  .flow { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:8px 0 4px; }
+  @media (max-width:760px){ .flow{ grid-template-columns:1fr 1fr; } }
+  .step { padding:12px 14px; border-radius:10px; background:rgba(192,132,252,0.06); border:1px solid rgba(192,132,252,0.18); }
+  .step .sn { font-size:10px; font-weight:800; color:#c084fc; letter-spacing:1px; }
+  .step h5 { font-size:12.5px; font-weight:600; color:#e8eaf2; margin-top:4px; line-height:1.35; }
+  .flow-title { font-size:14px; font-weight:700; color:#e8eaf2; margin:20px 0 4px; }
+  .flow-title .badge { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:3px 9px; border-radius:10px; margin-right:9px; }
+  .flow-title .b-shared { color:#4ade80; background:rgba(74,222,128,0.12); }
+  .flow-title .b-a { color:#60a5fa; background:rgba(96,165,250,0.12); }
+  .flow-title .b-b { color:#fbbf24; background:rgba(251,191,36,0.12); }
+  .flow-title .b-p { color:#c084fc; background:rgba(192,132,252,0.12); }
+
+  .wf { margin:18px 0 30px; }
+  .wf-head { display:flex; align-items:center; gap:14px; margin-bottom:5px; flex-wrap:wrap; }
+  .wf-head .wl { font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; padding:5px 14px; border-radius:20px; white-space:nowrap; }
+  .wf-head h4 { font-size:17px; font-weight:800; color:#fff; }
+  .wf.f .wl { color:#4ade80; background:rgba(74,222,128,0.14); }
+  .wf.init .wl { color:#2dd4bf; background:rgba(45,212,191,0.14); }
+  .wf.m1 .wl { color:#60a5fa; background:rgba(96,165,250,0.14); }
+  .wf.m2 .wl { color:#c084fc; background:rgba(192,132,252,0.14); }
+  .wf-time { font-size:12.5px; color:#88909e; margin-bottom:16px; line-height:1.55; }
+  .wf-time strong { color:#b8bdce; }
+  .wf-row { display:flex; align-items:stretch; flex-wrap:wrap; }
+  .wf-step { flex:1 1 0; min-width:128px; position:relative; padding:14px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.07); margin:0 22px 12px 0; }
+  .wf-step:last-child { margin-right:0; }
+  .wf-step::after { content:'\203A'; position:absolute; right:-15px; top:50%; transform:translateY(-50%); color:#4a4d5a; font-size:20px; font-weight:700; }
+  .wf-step:last-child::after { display:none; }
+  .wf.f .wf-step { background:rgba(74,222,128,0.05); border-color:rgba(74,222,128,0.16); }
+  .wf.init .wf-step { background:rgba(45,212,191,0.05); border-color:rgba(45,212,191,0.16); }
+  .wf.m1 .wf-step { background:rgba(96,165,250,0.05); border-color:rgba(96,165,250,0.16); }
+  .wf.m2 .wf-step { background:rgba(192,132,252,0.05); border-color:rgba(192,132,252,0.16); }
+  .wf-step .wn { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; font-size:11px; font-weight:800; color:#0a0a0f; margin-bottom:9px; }
+  .wf.f .wf-step .wn { background:#4ade80; }
+  .wf.init .wf-step .wn { background:#2dd4bf; }
+  .wf.m1 .wf-step .wn { background:#60a5fa; }
+  .wf.m2 .wf-step .wn { background:#c084fc; }
+  .wf-sticker.rare { background:#fbbf24; }
+  .wf-phase3 { font-size:13.5px; font-weight:700; color:#e8eaf2; line-height:1.5; margin:26px 0 16px; padding-left:14px; border-left:3px solid; border-image:linear-gradient(#60a5fa,#c084fc) 1; }
+  .wf-band { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 14px; margin:34px 0 18px; padding-bottom:9px; border-bottom:1px solid rgba(255,255,255,0.1); }
+  .wf-band:first-of-type { margin-top:2px; }
+  .wf-band .bt { font-size:17px; font-weight:800; color:#fff; letter-spacing:-0.2px; }
+  .wf-band .bd { font-size:12.5px; color:#88909e; }
+  .wf-step h5 { font-size:12.5px; font-weight:600; color:#e8eaf2; line-height:1.4; }
+  .wf-step.once { border-style:dashed; }
+  .wf-step.once .wn { background:#6b7280 !important; }
+  .wf-sticker { position:absolute; top:-9px; right:10px; font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#0a0a0f; background:#fbbf24; padding:3px 8px; border-radius:20px; }
+
+  .tier { display:grid; grid-template-columns:150px 1fr; gap:16px; padding:14px 0; border-top:1px solid rgba(255,255,255,0.06); }
+  .tier:first-child { border-top:none; }
+  .tier .th { font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; }
+  .tier.reuse .th { color:#4ade80; } .tier.adapt .th { color:#fbbf24; } .tier.new .th { color:#c084fc; }
+  .tier .ts { font-size:12.5px; color:#bcc1d0; line-height:1.7; }
+  @media (max-width:700px){ .tier{ grid-template-columns:1fr; gap:6px; } }
+
+  .princ { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:8px 0; }
+  @media (max-width:760px){ .princ{ grid-template-columns:1fr; } }
+  .pr { padding:16px 18px; border-radius:10px; background:linear-gradient(135deg,#13182a,#161c2f); border:1px solid rgba(192,132,252,0.12); }
+  .pr .pn { font-family:'SF Mono',monospace; font-size:10px; font-weight:800; color:#c084fc; }
+  .pr h4 { font-size:13.5px; font-weight:700; color:#fff; margin:4px 0 6px; }
+  .pr p { font-size:12px; color:#aab0c2; line-height:1.55; }
+
+  .deferred { background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.22); border-radius:12px; padding:22px 26px; margin:60px 0 30px; }
+  .deferred .dl { font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:#fbbf24; margin-bottom:10px; }
+  .deferred h3 { font-size:18px; color:#fff; margin-bottom:12px; }
+  .deferred ol { padding-left:20px; }
+  .deferred li { font-size:13px; color:#c5cad7; line-height:1.7; margin-bottom:6px; }
+  .deferred li strong { color:#fde68a; }
+  .deferred li em { color:#fca5a5; font-style:italic; }
+
+  .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:8px 0; }
+  @media (max-width:760px){ .grid3{ grid-template-columns:1fr; } }
+  .cmx { width:100%; border-collapse:collapse; margin:10px 0; font-size:12.5px; }
+  .cmx th { text-align:left; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#c084fc; padding:8px 10px; border-bottom:1px solid rgba(192,132,252,0.25); }
+  .cmx td { padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.05); color:#bcc1d0; vertical-align:top; line-height:1.45; }
+  .cmx tr td:first-child { color:#e8eaf2; font-weight:600; }
+  .cmx .grp td { color:#c084fc; font-weight:800; font-size:10px; letter-spacing:1px; text-transform:uppercase; padding-top:16px; border-bottom:1px solid rgba(192,132,252,0.18); }
+  .cmx code { font-size:11px; }
+  .cmx .nw { color:#fbbf24; font-size:9px; font-weight:800; letter-spacing:0.5px; }
+  .footer { text-align:center; padding-top:20px; border-top:1px solid rgba(255,255,255,0.05); color:#555; font-size:11px; margin-top:40px; line-height:1.7; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="logo">gtm engine</div>
+    <h1>Architecture Model</h1>
+    <div class="date">Senest opdateret 2026-08-13 · source of truth</div>
+    <div class="vbadge">v3.3</div>
+  </div>
+
+  <!-- ===================== PART 1 — CONCEPT ===================== -->
+  <div class="part-banner concept">
+    <div class="tag">Part 1</div>
+    <h2>Concept</h2>
+    <p>The engine at a glance: the stages and how work flows across them.</p>
+  </div>
+
+  <div class="concept">
+
+    <!-- ===================== HIGH-LEVEL CONCEPT (sketch v1) ===================== -->
+    <div class="section">
+      <span class="num">Overview</span>
+      <h3>Engine that can run lead generation campaigns</h3>
+      <p class="lede">The goal of the engine is to create leads that are qualified enough to be handed over to a sales channel <strong>(phone, meeting)</strong>. It creates those leads by communicating in the market either <strong>to many</strong> through broad campaigns or <strong>to one</strong> through one-to-one outreach to relevant stakeholders.</p>
+
+      <div style="overflow-x:auto;padding:6px 2px 14px;">
+        <div style="min-width:1180px;">
+
+          <!-- Feeder row: Foundation sits above Stage 1 -->
+          <div style="display:flex;">
+            <div style="flex:0 0 320px;display:flex;flex-direction:column;align-items:flex-start;">
+              <div style="width:560px;background:linear-gradient(135deg,#1a141c,#1c1620);border:1px solid rgba(244,114,182,0.4);border-radius:14px;padding:13px 14px;margin-bottom:6px;">
+                <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#f472b6;margin-bottom:10px;">&#128100; Human in the loop</div>
+                <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+                  <div>
+                    <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Skill</div>
+                    <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-foundation</span>
+                  </div>
+                  <div>
+                    <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Artefact</div>
+                    <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">_manifest.yaml</span>
+                  </div>
+                </div>
+              </div>
+              <div style="width:2px;height:14px;background:rgba(244,114,182,0.5);margin:0 0 4px 34px;"></div>
+              <div style="width:560px;background:rgba(45,212,191,0.07);border:1px solid rgba(45,212,191,0.3);border-radius:12px;padding:14px 14px;">
+                <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#2dd4bf;margin-bottom:12px;">Foundation</div>
+                <div style="font-size:8.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#5fb3a8;margin-bottom:6px;">Inside <span style="color:#3f7d76;font-weight:600;">· the Subject</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:13px;">
+                  <div style="background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.22);border-radius:9px;padding:9px 12px;">
+                    <div style="font-size:12.5px;font-weight:600;color:#e8eaf2;margin-bottom:7px;">Subject knowledge</div>
+                    <div style="display:flex;gap:16px;align-items:flex-start;"><div style="flex:1;"><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Skills</div><div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-voice</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-subject-brand-visual</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-subject-product-context</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-icp</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-positioning</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-customer-wins</span>
+                    </div></div><div style="flex:1;"><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Artefacts</div><div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">brand-voice.md</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">visual.md</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">product.md</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">ideal-customer.md</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">positioning.md</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">proof-points/</span>
+                    </div></div></div>
+                  </div>
+                  <div style="background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.22);border-radius:9px;padding:9px 12px;">
+                    <div style="font-size:12.5px;font-weight:600;color:#e8eaf2;margin-bottom:7px;">Persona knowledge</div>
+                    <div style="display:flex;gap:16px;align-items:flex-start;"><div style="flex:1;"><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Skills</div><div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-persona</span>
+                    </div></div><div style="flex:1;"><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Artefacts</div><div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">persona-voices/{operator}.md</span>
+                    </div></div></div>
+                  </div>
+                </div>
+                <div style="font-size:8.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#5fb3a8;margin-bottom:6px;">Outside <span style="color:#3f7d76;font-weight:600;">· the targets</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.22);border-radius:9px;padding:9px 12px;">
+                    <div style="font-size:12.5px;font-weight:600;color:#e8eaf2;margin-bottom:7px;">Industry knowledge</div>
+                    <div style="display:flex;gap:16px;align-items:flex-start;"><div style="flex:1;"><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Skills</div><div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/deep-research</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/council</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-trending-research</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/firecrawl</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-buyer-personas</span>
+                    </div></div><div style="flex:1;"><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Artefacts</div><div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">industry-research.md</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">buyer-personas.md</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">target-list.csv</span>
+                    </div></div></div>
+                  </div>
+                  <div style="background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.22);border-radius:9px;padding:9px 12px;">
+                    <div style="font-size:12.5px;font-weight:600;color:#e8eaf2;margin-bottom:7px;">Account knowledge</div>
+                    <div style="display:flex;gap:16px;align-items:flex-start;"><div style="flex:1;"><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Skills</div><div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-account-qualifier</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:1px 6px;">/gtm-apollo-list-builder</span>
+                    </div></div><div style="flex:1;"><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Artefacts</div><div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">account-card.yaml</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">stakeholder-map.md</span>
+                      <span style="font-family:'SF Mono',Menlo,monospace;font-size:9.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:1px 6px;">account-angle.md</span>
+                    </div></div></div>
+                  </div>
+                </div>
+              </div>
+              <div style="width:2px;height:16px;background:rgba(45,212,191,0.5);margin:1px 0 0 34px;"></div>
+            </div>
+          </div>
+
+          <!-- Connector: Foundation feeds every stage -->
+          <div style="display:flex;align-items:flex-start;">
+            <div style="flex:0 0 320px;border-top:2px solid rgba(45,212,191,0.45);display:flex;justify-content:center;"><span style="color:#2dd4bf;font-size:15px;line-height:1;">&#8595;</span></div>
+            <div style="padding:0 10px;font-size:26px;font-weight:700;color:transparent;border-top:2px solid rgba(45,212,191,0.45);">&#8250;</div>
+            <div style="flex:1 1 230px;border-top:2px solid rgba(45,212,191,0.45);display:flex;justify-content:center;"><span style="color:#2dd4bf;font-size:15px;line-height:1;">&#8595;</span></div>
+            <div style="padding:0 10px;font-size:26px;font-weight:700;color:transparent;border-top:2px solid rgba(45,212,191,0.45);">&#8250;</div>
+            <div style="flex:1 1 230px;border-top:2px solid rgba(45,212,191,0.45);display:flex;justify-content:center;"><span style="color:#2dd4bf;font-size:15px;line-height:1;">&#8595;</span></div>
+            <div style="padding:0 10px;font-size:26px;font-weight:700;color:transparent;border-top:2px solid rgba(45,212,191,0.45);">&#8250;</div>
+            <div style="flex:1 1 230px;border-top:2px solid rgba(45,212,191,0.45);display:flex;justify-content:center;"><span style="color:#2dd4bf;font-size:15px;line-height:1;">&#8595;</span></div>
+          </div>
+
+          <!-- Cards row: four stages, tops aligned -->
+          <div style="display:flex;align-items:stretch;gap:0;margin-top:2px;">
+
+            <!-- Stage 1: campaigns + routines, one identical card each, label sits outside the boxes -->
+            <div style="flex:0 0 320px;display:flex;flex-direction:column;">
+              <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#60a5fa;margin-bottom:3px;">Stage 1</div>
+              <div style="font-size:12px;color:#aab0c2;line-height:1.5;margin-bottom:12px;">One per campaign <em>or routine</em> &mdash; everything specific to it <span style="color:#88909e;">(Why, Who, How, Where)</span></div>
+              <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Lead <span style="color:#4a4d5a;font-weight:600;">· starts + chains the setup</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
+                <span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;font-weight:700;color:#7ee0a8;background:rgba(126,224,168,0.14);border:1.5px solid rgba(126,224,168,0.45);border-radius:5px;padding:2px 8px;">/gtm-campaign-start</span>
+              </div>
+              <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Contract builders <span style="color:#4a4d5a;font-weight:600;">· one contract each</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px;">
+                <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-campaign-brief</span>
+                <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-campaign-plan</span>
+                <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-campaign-project-plan <span style="color:#5f6b7a;">campaigns only</span></span>
+              </div>
+              <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Artefacts <span style="color:#4a4d5a;font-weight:600;">· same two contracts for both</span></div>
+              <div style="display:flex;flex-direction:column;gap:9px;">
+                <div style="background:linear-gradient(135deg,#13182a,#161c2f);border:1px solid rgba(96,165,250,0.32);border-radius:12px;padding:13px 14px;">
+                  <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:2px;">Campaigns</div>
+                  <div style="font-size:10.5px;color:#88909e;line-height:1.5;margin-bottom:8px;">Timebound: a start, an end and a fixed campaign plan</div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;"><span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">brief.md</span><span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">campaign-plan.md</span><span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">project-plan.md</span></div>
+                </div>
+                <div style="background:linear-gradient(135deg,#13182a,#161c2f);border:1px solid rgba(96,165,250,0.32);border-radius:12px;padding:13px 14px;">
+                  <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:2px;">Routines</div>
+                  <div style="font-size:10.5px;color:#88909e;line-height:1.5;margin-bottom:8px;">Ongoing: no end date, running on a continuous rhythm or on signals</div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;"><span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">brief.md</span><span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">campaign-plan.md</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;color:#4a4d5a;font-size:26px;font-weight:700;padding:0 10px;">&#8250;</div>
+
+            <!-- Stage 2: Content produktion -->
+          <div style="flex:1 1 230px;background:linear-gradient(135deg,#13182a,#161c2f);border:1px solid rgba(251,146,60,0.3);border-radius:14px;padding:18px 16px;min-height:170px;display:flex;flex-direction:column;">
+            <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#fb923c;margin-bottom:2px;">Stage 2</div>
+            <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:12px;">Content production</div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Lead <span style="color:#4a4d5a;font-weight:600;">· owns form, voice + the gate</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;font-weight:700;color:#7ee0a8;background:rgba(126,224,168,0.14);border:1.5px solid rgba(126,224,168,0.45);border-radius:5px;padding:2px 8px;">/gtm-creative</span>
+            </div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Specialists <span style="color:#4a4d5a;font-weight:600;">· composed on demand, one craft each</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-copywriting <span style="color:#5f6b7a;">paid copy</span></span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-pptx-design <span style="color:#5f6b7a;">decks</span></span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-nano-banana <span style="color:#5f6b7a;">images</span></span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-humanizer <span style="color:#5f6b7a;">de-AI</span></span>
+            </div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Content <span style="color:#4a4d5a;font-weight:600;">· per channel, per operator · voice-gated .md</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">linkedin-{operator}.md</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">linkedin_connect-{operator}.md</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">linkedin_comment-{operator}.md</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">linkedin_dm-{operator}.md</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">email-{operator}.md</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">directmail-{operator}.md</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#9a823a;background:rgba(251,191,36,0.04);border:1px dashed rgba(251,191,36,0.32);border-radius:5px;padding:2px 7px;">&hellip; one per active channel</span>
+            </div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Assets <span style="color:#4a4d5a;font-weight:600;">· shared, reused across channels</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">image-1.png</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">image-2.png</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">carousel.pdf</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">preview.png</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#9a823a;background:rgba(251,191,36,0.04);border:1px dashed rgba(251,191,36,0.32);border-radius:5px;padding:2px 7px;">&hellip; many</span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;color:#4a4d5a;font-size:26px;font-weight:700;padding:0 10px;">&#8250;</div>
+
+          <!-- Stage 3: Kanaleksekvering -->
+          <div style="flex:1 1 230px;background:linear-gradient(135deg,#13182a,#161c2f);border:1px solid rgba(74,222,128,0.3);border-radius:14px;padding:18px 16px;min-height:170px;display:flex;flex-direction:column;">
+            <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#4ade80;margin-bottom:2px;">Stage 3</div>
+            <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:12px;">Channel execution</div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Executors <span style="color:#4a4d5a;font-weight:600;">· one per channel · stamped from one template</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-linkedin-post</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-linkedin-ads</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-linkedin-connect</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-email</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-linkedin-comment</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-linkedin-dm</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-direct-mail</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-landing-page</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-{x} · template</span>
+            </div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Review surface <span style="color:#4a4d5a;font-weight:600;">· cross-channel, constant</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;font-weight:700;color:#7ee0a8;background:rgba(126,224,168,0.14);border:1.5px solid rgba(126,224,168,0.45);border-radius:5px;padding:2px 8px;">/gtm-queue</span>
+            </div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Artefacts <span style="color:#4a4d5a;font-weight:600;">· the delivery queue</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">content/{touch-slug}/touch.yaml</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">control-panel/{operator}.md</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">control-panel/_archive/</span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;color:#4a4d5a;font-size:26px;font-weight:700;padding:0 10px;">&#8250;</div>
+
+          <!-- Stage 4: Overvågning og læring -->
+          <div style="flex:1 1 230px;background:linear-gradient(135deg,#13182a,#161c2f);border:1px solid rgba(192,132,252,0.32);border-radius:14px;padding:18px 16px;min-height:170px;display:flex;flex-direction:column;">
+            <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#c084fc;margin-bottom:2px;">Stage 4</div>
+            <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:12px;">Monitoring &amp; learning</div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Learning loops <span style="color:#4a4d5a;font-weight:600;">· signals back into production</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-performance-collect</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-performance-learn</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-voice-learn</span>
+            </div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Scoring + memory</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-engagement-scoring</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-account-qualifier</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-reporting</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/ask</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/mark</span>
+            </div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Artefacts</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">content-signals.yaml</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">lead-scores</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">account-list</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">report.md</span>
+            </div>
+          </div>
+
+          </div>
+
+          <!-- Ops / human-in-the-loop layer: one operator review surface spanning all produced content -->
+          <div style="background:linear-gradient(135deg,#1a141c,#1c1620);border:1px solid rgba(244,114,182,0.4);border-radius:14px;padding:16px 18px;margin-top:12px;">
+            <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#f472b6;margin-bottom:12px;">&#128100; Human in the loop</div>
+            <div style="display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;">
+              <div>
+                <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Skill</div>
+                <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-queue</span>
+              </div>
+              <div>
+                <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Artefact</div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                  <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22);border-radius:5px;padding:2px 7px;">control-panel/{operator}.md</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="margin-top:26px;background:rgba(96,165,250,0.05);border:1px solid rgba(96,165,250,0.22);border-left:3px solid #60a5fa;border-radius:0 12px 12px 0;padding:20px 22px;max-width:900px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#60a5fa;margin-bottom:14px;">Important principles</div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">1 &middot; What runs in the engine: campaigns and routines</div>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 10px;">The engine&rsquo;s unit of work is defined entirely by its brief; a company runs many at once. It comes in exactly two mutually exclusive kinds, split by the brief&rsquo;s existing <code>type</code> field &mdash; no new classifier.</p>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 10px;">A <b>campaign</b> is <b>timebound</b>: a start, an end and a fixed campaign plan (an arc; three contracts incl. <code>project-plan.md</code>) &mdash; e.g. Brand Ambassadors. A <b>routine</b> is <b>ongoing</b>: no end date, running on a continuous rhythm or on signals (a cadence; two contracts) &mdash; post-engage, saved-posts, industry-trending, new-follower welcome, voice-learn. Beyond that the mechanics are identical: same contract chain, same workspace shape, same queue, same conductor; presented as two hub pages over one shared Notion DB.</p>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0;">Touches in either kind can be <b>scheduled</b> (planned on a calendar), <b>triggered</b> (fired by a signal &mdash; a reply, an engagement threshold), or a mix of both; a campaign&rsquo;s triggers are described in its campaign plan. Send-<em>time</em> is plan-owned too: the campaign-plan&rsquo;s Send-tid grammar decides when a channel&rsquo;s touches go out; Stage 3 stamps it as an optional per-touch <code>scheduled_time</code> in <code>touch.yaml</code>, and the conductor&rsquo;s delivery step gates on it.</p>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">2 &middot; Campaign-specific vs generic</div>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0;">Everything specific to a campaign lives in its brief; everything else in the engine is generic and shared across all campaigns &mdash; Foundation (subject + industry knowledge), content production, channel execution, monitoring/scoring.</p>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">3 &middot; The brief is the contract</div>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0;">The engine reads a brief and orchestrates the generic capabilities end to end for that campaign. The brief is the contract; the rest is tooling.</p>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">4 &middot; Accounts live in Foundation</div>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0;">Accounts belong to industries (part of industry research). The aggregate account lists live in Foundation as a registry, so any campaign can target the whole list or a slice &mdash; CRM-like (the list may ultimately belong in an actual CRM).</p>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">5 &middot; Content and presentation are separate</div>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0;">Content production engineers the substance: it makes every asset a campaign needs complete and channel-aware, but it does not write the finished channel format. Channel execution is the presentation layer: it takes those assets and assembles &amp; delivers them in each channel&rsquo;s final form.</p>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">6 &middot; Channel executors share one anatomy</div>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 8px;">Every channel executor (<code style="font-family:'SF Mono',Menlo,monospace;font-size:12px;color:#7ee0a8;">/gtm-channel-{x}</code>) is the same four-step shape, only the channel format varies. Adding a channel is stamping the shared template &mdash; fill in the format spec and the channel fields, nothing else; a fix to the anatomy propagates to every future stamp via the template.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;font-family:'SF Mono',Menlo,monospace;font-size:11px;color:#aab0c2;">
+            <span style="background:rgba(126,224,168,0.06);border:1px solid rgba(126,224,168,0.18);border-radius:5px;padding:3px 8px;"><b style="color:#7ee0a8;">1 Input</b> &larr; Stage 2 content artefact (voice-gated + humanized) + campaign context</span>
+            <span style="background:rgba(126,224,168,0.06);border:1px solid rgba(126,224,168,0.18);border-radius:5px;padding:3px 8px;"><b style="color:#7ee0a8;">2 Constraints</b> &larr; format spec in the executor itself</span>
+            <span style="background:rgba(126,224,168,0.06);border:1px solid rgba(126,224,168,0.18);border-radius:5px;padding:3px 8px;"><b style="color:#7ee0a8;">3 Assemble</b> &larr; Stage 2 body verbatim (voice lives in Stage 2)</span>
+            <span style="background:rgba(126,224,168,0.06);border:1px solid rgba(126,224,168,0.18);border-radius:5px;padding:3px 8px;"><b style="color:#7ee0a8;">4 Output</b> &rarr; pending queue &rarr; review</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">7 &middot; Knowledge and knobs live apart</div>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 8px;">Every piece of information has one home, decided by a single question: is it a <b>truth</b> or a <b>dial</b>? Durable truths about the Subject and its audience live in <b>Foundation</b>; truths that hold for only one campaign live in that campaign&rsquo;s <b>brief</b>. Operational dials you tune &mdash; scoring weights, bindings, enforce-rules, queue presentation, campaign-manager knobs &mdash; live in <b>settings</b> and carry no knowledge. Campaign choices &mdash; cadence, channel mix, budgets &mdash; are brief truths, never global settings; per-channel format limits live in the channel executor itself. Bookkeeping about the build itself (open decisions, what&rsquo;s pending) lives in the <b>operating layer</b> (ask.md).</p>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0;">A rule and the knowledge it acts on are split: &ldquo;enforce no banned words&rdquo; is a dial (settings); the <em>list</em> of banned words is voice knowledge (Foundation). The scoring <em>weights</em> are dials; the <em>buyer titles</em> are ideal-customer knowledge.</p>
+        </div>
+
+        <div>
+          <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">8 &middot; Delivery is automatic &mdash; gated by approval, or by an explicit per-channel auto-policy</div>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 8px;">A deliverable touch auto-sends via <b>Unipile</b> through the conductor&rsquo;s delivery step (Step 4b), using the send scripts in <code>gtm-shared/unipile/</code>. <b>Seven channels</b>: personal post &middot; company post &middot; connect &middot; DM &middot; comment &middot; email &middot; physical direct mail. Direct mail is assembled by the engine but <em>always delivered by a human</em> &mdash; print and post is a manual act, so the channel has no <code>delivery</code> block at all. Gating is deterministic and fail-closed: <code>settings &gt; delivery</code> decides per channel which operators auto-send (absent section = everything stays manual); company posts carry the organization id; per-run pacing caps protect the accounts.</p>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 8px;"><b>Approval is not the only trigger.</b> The small touches &mdash; <b>comments and connects</b> &mdash; carry <code>review: auto</code> in <code>settings &gt; delivery</code> and send <em>without</em> operator approval, each with a kill-switch (remove the line and everything on the channel needs the checkbox again, including auto-stamped items already queued), a reject option and a pre-approved new-version path in the queue. Posts, company posts, DMs and email remain approval-gated (&ldquo;Jeg godkender indholdet&rdquo;). The engine never writes <code>approved: true</code> itself &mdash; a human approval or the explicit auto-policy is the only path to a send, and every other gate (voice, humanizer, suppression, pacing, portfolio caps) is unchanged on auto channels. Only the engine_owner may change the auto-policy.</p>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0;"><b>Wrong-target gate:</b> every Unipile send verifies author/recipient identity against the source object before it fires &mdash; URNs are taken only from the post object, never reconstructed. Idempotent: a touch that already carries a Unipile id is never re-sent. HEIC images convert on the fly to a deliverable jpg in engine scratch (<code>_temp/</code>). Reads follow the same discipline: <b>Unipile-first read policy</b> &mdash; wherever the adapter endpoint exists, skills read through it; Chrome is a documented, flagged fallback only, never primary, never silent.</p>
+        </div>
+
+      </div>
+    </div>
+
+  <section style="background:#0a0a0f;color:#e0e0e8;font-family:Inter,-apple-system,sans-serif;padding:28px 24px;border-radius:16px;margin:48px 0 24px;border:1px solid rgba(255,255,255,.06)">
+    <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#8a93a0;margin-bottom:4px">The skills, stage by stage</div>
+    <div style="font-size:13px;color:#8a93a0;margin-bottom:20px">Same stages as the overview above: Foundation feeds every stage; a campaign runs Stage 1 → 2 → 3 → 4, connected by the queue. One line per skill.</div>
+    <style>
+      .sg-card{background:#111118;border:1px solid rgba(255,255,255,.06);border-left-width:3px;border-radius:12px;padding:16px 18px;margin-bottom:12px}
+      .sg-h{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
+      .sg-title{font-size:15px;font-weight:800;color:#fff;margin-bottom:2px}
+      .sg-sub{font-size:12px;color:#8a93a0;margin-bottom:12px}
+      .sg-grp{font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#6b7280;margin:10px 0 5px}
+      .sk{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 4px;font-size:12.5px;line-height:1.55;padding:2px 0}
+      .sk code{font-family:'SF Mono',Menlo,monospace;font-size:11.5px;color:#7ee0a8;background:rgba(126,224,168,.07);border-radius:4px;padding:1px 6px}
+      .sk .exp{color:#aab0c2}
+      .sg-cols{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px}
+      @media(max-width:760px){.sg-cols{grid-template-columns:1fr}}
+    </style>
+
+    <!-- Foundation -->
+    <div class="sg-card" style="border-left-color:#2dd4bf">
+      <div class="sg-h" style="color:#2dd4bf">Foundation</div>
+      <div class="sg-grp">Lead · builds + cross-validates the whole Foundation</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-foundation</code><span class="exp">— Orchestrates the builders below, one piece at a time; runs the cross-checks</span></div>
+      </div>
+      <div class="sg-grp">Builders · Inside · the Subject</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-voice</code><span class="exp">— Learns the brand's writing voice</span></div>
+        <div class="sk"><code>gtm-positioning</code><span class="exp">— Defines how the brand positions itself</span></div>
+        <div class="sk"><code>gtm-icp</code><span class="exp">— Defines who the ideal customers are</span></div>
+        <div class="sk"><code>gtm-customer-wins</code><span class="exp">— Turns existing customers into proof points</span></div>
+        <div class="sk"><code>gtm-subject-product-context</code><span class="exp">— Captures what the product does</span></div>
+        <div class="sk"><code>gtm-subject-brand-visual</code><span class="exp">— Captures the visual identity (fonts, colours, logo)</span></div>
+        <div class="sk"><code>gtm-persona</code><span class="exp">— Learns one operator's personal writing voice</span></div>
+        <div class="sk"><code>gtm-config-builder</code><span class="exp">— Sets the engine's settings and wiring</span></div>
+        <div class="sk"><code>gtm-media-index</code><span class="exp">— Builds/refreshes the media-library catalogue (INDEX.yaml)</span></div>
+      </div>
+      <div class="sg-grp">Builders · Outside · the targets</div>
+      <div class="sg-cols">
+        <div class="sk"><code>deep-research</code> · <code>council</code><span class="exp">— Researches the industry. Separate shared machines the engine CALLS — deliberate exceptions to the gtm-fork rule, never renamed; the machines themselves are add-ons, not part of the delivered engine. The <code>gtm-council</code> wrapper DOES ship and falls back to the engine&rsquo;s own deep research when the machine is absent — same output contract, fallback always loudly flagged</span></div>
+        <div class="sk"><code>firecrawl</code><span class="exp">— Reads web pages at scale (operator-routed gather hand-off)</span></div>
+        <div class="sk"><code>gtm-trending-research</code><span class="exp">— Industry-aware trending research, self-contained; feeds theme-input to /council</span></div>
+        <div class="sk"><code>gtm-buyer-personas</code><span class="exp">— Maps the buyers in a market</span></div>
+        <div class="sk"><code>gtm-apollo-list-builder</code><span class="exp">— Builds the list of target companies</span></div>
+        <div class="sk"><code>gtm-apollo-enrichment</code><span class="exp">— Finds contact details for those companies</span></div>
+        <div class="sk"><code>gtm-account-qualifier</code><span class="exp">— Checks if an account is worth pursuing</span></div>
+        <div class="sk"><code>gtm-abm-account-playbook</code><span class="exp">— Makes a plan for one target account</span></div>
+        <div class="sk"><code>gtm-industry-research</code><span class="exp">— Sets up and runs the research for a new industry</span></div>
+      </div>
+    </div>
+
+    <!-- Stage 1 -->
+    <div class="sg-card" style="border-left-color:#60a5fa">
+      <div class="sg-h" style="color:#60a5fa">Stage 1</div>
+      <div class="sg-title">One per campaign or routine — everything specific to it (Why, Who, How, Where)</div>
+      <div class="sg-grp">Lead · starts + chains the setup</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-campaign-start</code><span class="exp">— Starts a campaign; chains the three contract builders below</span></div>
+      </div>
+      <div class="sg-grp">Contract builders · one contract each</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-campaign-brief</code><span class="exp">— Builds the campaign brief from the operator's input</span></div>
+        <div class="sk"><code>gtm-campaign-plan</code><span class="exp">— Plans the timing and channels</span></div>
+        <div class="sk"><code>gtm-campaign-project-plan</code><span class="exp">— Lists the internal tasks (campaigns only — routines have none)</span></div>
+      </div>
+      <div class="sg-grp">Lifecycle · pause + resume</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-campaign-pause</code><span class="exp">— Pauses a campaign: production stops, produced-unapproved touches move to a Pauset view. Routines pause separately (wrapper-skip, engine_owner-only)</span></div>
+        <div class="sk"><code>gtm-campaign-resume</code><span class="exp">— Resumes a paused campaign: approval resets, the operator chooses push-or-drop for the arc; a pause expiry raises a decision, never a headless restart</span></div>
+      </div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="sg-card" style="border-left-color:#fb923c">
+      <div class="sg-h" style="color:#fb923c">Stage 2</div>
+      <div class="sg-title">Content production</div>
+      <div class="sg-grp">Lead · owns form, voice + the gate</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-creative</code><span class="exp">— Reads brief + Foundation, chooses the form, writes organic posts itself, runs the voice-gate; composes the specialists below</span></div>
+      </div>
+      <div class="sg-grp">Specialists · composed on demand, one craft each</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-copywriting</code><span class="exp">— Paid copy: persuasive slot-copy to spec (ads; later landing pages)</span></div>
+        <div class="sk"><code>gtm-pptx-design</code><span class="exp">— Decks: branded slides and carousels</span></div>
+        <div class="sk"><code>gtm-nano-banana</code><span class="exp">— Images: generates to pixel spec from an art brief</span></div>
+        <div class="sk"><code>gtm-humanizer</code><span class="exp">— De-AI: removes AI-sounding language</span></div>
+        <div class="sk"><code>gtm-copy-review</code><span class="exp">— Reviews queue drafts against the copywriting rubric: quotes, severity, verdict — approved / needs-fix / rejected</span></div>
+      </div>
+      <div class="sg-grp">Handoff contract · the Stage-2 artefact frontmatter (six keys)</div>
+      <div style="font-size:12px;color:#aab0c2;line-height:1.65;">channel · operator · proposed_image · voice_checked · <b style="color:#e8eaf2;">humanized</b> · status. <code>humanized: true</code> is a hard Stage-3 gate: the de-AI pass is mandatory for every channel and every campaign type (incl. reactive/trending), and executors STOP without it. Optional sanctioned flag <code>engine_anecdote: true</code>: an engine-drafted first-person anecdote is a deliberate exception and carries a visible operator-confirmation line in the queue item. Cross-operator variation gate in Stage 2: a statistic appears on max one operator profile per rolling 14 days; an opener stem max once per operator per rolling 30 days. Contract: <code>docs/design/stage-2-content-contract.md</code> (engine repo).</div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="sg-card" style="border-left-color:#4ade80">
+      <div class="sg-h" style="color:#4ade80">Stage 3</div>
+      <div class="sg-title">Channel execution</div>
+      <div class="sg-grp">Executors · one per channel · stamped from one template</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-channel-linkedin-post</code><span class="exp">— Posts the content to LinkedIn (via the queue)</span></div>
+        <div class="sk"><code>gtm-channel-linkedin-ads</code><span class="exp">— Runs paid LinkedIn ads (via Claude-in-Chrome; native API later)</span></div>
+        <div class="sk"><code>gtm-channel-linkedin-connect</code><span class="exp">— Prepares the connection request</span></div>
+        <div class="sk"><code>gtm-channel-email</code><span class="exp">— Prepares the outbound email (Unipile-plumbed)</span></div>
+        <div class="sk"><code>gtm-channel-linkedin-comment</code><span class="exp">— Prepares a comment on someone's post (auto-review channel)</span></div>
+        <div class="sk"><code>gtm-channel-linkedin-dm</code><span class="exp">— Prepares the LinkedIn DM</span></div>
+        <div class="sk"><code>gtm-channel-direct-mail</code><span class="exp">— Prepares personalised physical mail: letter + optional enclosure (verified-address contract, delivery always manual, cross-channel registration when the letter is marked sent)</span></div>
+        <div class="sk"><code>gtm-linkedin-post</code><span class="exp">— Ad-hoc one-off posts only; campaign posts go via gtm-creative → gtm-channel-linkedin-post</span></div>
+        <div class="sk"><code>gtm-linkedin-connect</code> · <code>gtm-linkedin-message</code> · <code>gtm-email-outbound</code><span class="exp">— Ad-hoc one-off outreach only; campaign work goes via gtm-creative → the stamped gtm-channel-* executors</span></div>
+        <div class="sk"><code>gtm-channel-executor-template</code><span class="exp">— The mould new channels are stamped from (proven: connect · email · comment · DM). A template in the engine repo (<code>templates/</code>), not an installed skill</span></div>
+      </div>
+      <div class="sg-grp">Review surface · cross-channel, constant</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-queue</code><span class="exp">— The operator's one surface: reviews, comments, approves before posting. Approval checkbox: &ldquo;Jeg godkender indholdet&rdquo; (readers tolerate the legacy label). Two presentations of the same queue: markdown (always-on baseline) + the Notion &ldquo;Godkendelseskø&rdquo; (opt-in per operator via <code>queue.presentations</code>, headless adapter; posted touches archive out to the &ldquo;Lanceret&rdquo; page). Approval state has ONE home &mdash; <code>touch.yaml review.approved</code>, written only by sync-back</span></div>
+      </div>
+      <div class="sg-grp">Orchestrators · cross-channel</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-email-sequence</code><span class="exp">— Sends a series of follow-up emails over time</span></div>
+        <div class="sk"><code>gtm-multithread-orchestrator</code><span class="exp">— Reaches several people at one account</span></div>
+      </div>
+      <div class="sg-grp">Interaction · ad-hoc engagement (operator-initiated, outside the campaign flow)</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-linkedin-engage</code><span class="exp">— Finds relevant posts to engage with</span></div>
+        <div class="sk"><code>gtm-linkedin-comment</code><span class="exp">— Writes a comment on someone's post (ad-hoc only; campaign comments go via gtm-creative → gtm-channel-linkedin-comment)</span></div>
+        <div class="sk"><code>gtm-linkedin-post-engage</code><span class="exp">— Tracks who engages with your own posts; also runs headless as the daily sense routine (08:30, all connected operators, person-suppression gate)</span></div>
+        <div class="sk"><code>gtm-linkedin-reply-comments</code><span class="exp">— Replies to comments on your posts</span></div>
+        <div class="sk"><code>gtm-linkedin-new-follower-welcome</code><span class="exp">— Welcomes new followers</span></div>
+      </div>
+    </div>
+
+    <!-- Stage 4 -->
+    <div class="sg-card" style="border-left-color:#c084fc">
+      <div class="sg-h" style="color:#c084fc">Stage 4</div>
+      <div class="sg-title">Monitoring &amp; learning</div>
+      <div class="sg-grp">Learning loops · signals back into production</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-performance-collect</code><span class="exp">— Collects per-post metrics into tracking/performance/</span></div>
+        <div class="sk"><code>gtm-performance-learn</code><span class="exp">— Turns metrics into the content-signals Stage 2 reads</span></div>
+        <div class="sk"><code>gtm-voice-learn</code><span class="exp">— Folds queue comments back into voice knowledge (human-approved); also harvests operator-edited live posts, runs a periodic drift review, and a graduation detector proposes a Foundation upgrade at 3+ similar corrections; weekly headless run incl. Slack/mail feedback intake</span></div>
+      </div>
+      <div class="sg-grp">Scoring + qualification</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-engagement-scoring</code><span class="exp">— Scores how warm each contact is</span></div>
+        <div class="sk"><code>gtm-account-qualifier</code><span class="exp">— Re-checks accounts as they heat up</span></div>
+        <div class="sk"><code>gtm-lead-capture</code><span class="exp">— Captures inbound leads (paid Lead Gen Forms and others) into <code>tracking/engagement/leads/</code>, with spam classification</span></div>
+      </div>
+      <div class="sg-grp">Reporting + memory</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-reporting</code><span class="exp">— Reports on how the campaign is doing</span></div>
+        <div class="sk"><code>gtm-management-report</code><span class="exp">— English management report with delta period: delivered, performing, changed. PDF + Notion (landing zone in <code>settings &gt; reporting</code>)</span></div>
+        <div class="sk"><code>ask</code> · <code>mark</code><span class="exp">— Remembers the project and sorts its files</span></div>
+      </div>
+    </div>
+
+    <!-- Cross-stage: the conductor -->
+    <div class="sg-card" style="border-left-color:#f472b6">
+      <div class="sg-h" style="color:#f472b6">Cross-stage · the conductor</div>
+      <div class="sg-title">Runs the campaigns and routines forward, autonomously</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-campaign-manager</code><span class="exp">— Reads every active campaign's and routine's contracts, decides what is due, drives Stage 2→3 into the panel on cadence, delivers approved touches (Step 4b, Unipile — principle 8), escalates what it cannot fix (control-panel/_campaign-management.md). Headless via per-job launchd plists: weekdays 09/13/17 + Sat/Sun 20:00.</span></div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:#aab0c2;line-height:1.65">
+        <b style="color:#e8eaf2;">Reaction layer:</b> an event-driven queue-watcher (<code>com.gist.gtm-queue-watch</code>) reacts within minutes to operator edits in the panel — sync, correction-loop, delivery and ping runs only, <em>never</em> production; a 5-minute poll fallback covers Drive-synced edits from other machines, which do not fire WatchPaths.<br>
+        <b style="color:#e8eaf2;">Plan-reconciliation v2</b> (Step 2b): missed touches are re-slotted, retired or marked covered deterministically via <code>gtm-shared/reconcile_touch.py</code> — max 1 auto-reslot per touch, a date-only move preserves the operator's approval and never re-pings, retired is terminal.<br>
+        <b style="color:#e8eaf2;">Catch-up delivery</b>: a skipped run never loses a post — the next successful run delivers every approved, still-fresh, past-due touch (max one personal post per operator per day when draining a backlog).<br>
+        <b style="color:#e8eaf2;">Portfolio enforcement</b>: <code>control-panel/_portfolio.md</code> sets hard cross-campaign ceilings (max posts per operator per day, max outreach per person); the conductor enforces them at every run and escalates synergy overlaps to &ldquo;Kr&aelig;ver din beslutning&rdquo; + a coordinator mail ping.<br>
+        <b style="color:#e8eaf2;">Goal tracking</b>: meetings are registered from the queue (&ldquo;Registr&eacute;r m&oslash;de&rdquo;, queue v4.3) into a meetings-ledger (<code>tracking/engagement/meetings/</code>); the conductor reports progress against the brief&rsquo;s targets and escalates off-trajectory campaigns pro-rata. Paid gets the same loop: CSV-ingested ad metrics, a weekly loser-verdict and rotation proposals in the queue.<br>
+        <b style="color:#e8eaf2;">Routines</b> (the second category of running work, principle 1; beside the conductor&rsquo;s cadence): post-engage harvests engagement on the operators&rsquo; own posts daily at 08:30 (all connected operators, person-suppression gate); saved-posts reads each connected operator&rsquo;s own Saved list 3&times;/weekday (08:45 &middot; 12:45 &middot; 16:45) and drafts a comment for every save; industry-trending turns the nightly trending scan into queued reactions; voice-learn runs weekly (Thursdays); new-follower welcome runs Tuesday + Thursday mornings (fail-closed).<br>
+        <b style="color:#e8eaf2;">Pause is two mechanisms</b>: a <em>campaign</em> pauses via <code>gtm-campaign-pause</code>/<code>-resume</code> (production stops, produced-unapproved touches move to a Pauset view, approval resets on resume, the operator chooses push-or-drop for the arc; a pause expiry raises a decision, never a headless restart) &mdash; authority: campaign owner / coordinator. A <em>routine</em> pauses via a wrapper-skip on its job &mdash; authority: engine_owner only.
+      </div>
+    </div>
+
+    <div style="margin-top:18px;font-size:12px;color:#8a93a0;line-height:1.65">
+      <b style="color:#cfd3da">How it connects (post channel):</b> campaign <code>brief.md</code> → <b style="color:#fb923c">gtm-creative</b> writes near-final, voice-rendered <code>content/{touch}/linkedin-{operator}.md</code> (voice gate here) → <b style="color:#4ade80">gtm-channel-linkedin-post</b> checks constraints, assembles verbatim, writes <code>touch.yaml</code> + a queue pointer → <b style="color:#4ade80">gtm-queue</b> → operator approves (&ldquo;Jeg godkender indholdet&rdquo;) → delivered: auto-sent via Unipile for gated operators (Step 4b), posted manually otherwise. Connect / email / comment / DM executors are stamped from the same shared template. The whole path runs autonomously on cadence via <b style="color:#f472b6">gtm-campaign-manager</b>. Company-page posts are a separate company-as-sender surface.
+    </div>
+  </section>
+
+    <div class="section">
+      <span class="num">Roles</span>
+      <h3>Roles and authority &mdash; campaigns and routines are free, the Foundation is guarded</h3>
+      <p class="lede">The engine is operated by named <strong>operators</strong> &mdash; the roster IS <code>foundation/company/persona-voices/</code> (one file = one operator) &mdash; with two authority roles layered on top. <span style="color:#6b7280;">(Full convention: <code>foundation/company/operating-conventions.md &gt; Roller og myndighed</code>; operator machine setup: OPERATORS.md in the skills repo.)</span></p>
+      <div class="grid2">
+        <div class="card"><h4>Operator</h4><ul>
+          <li>Daily surface is the <strong>control panel</strong> (the queue): reviews what the engine produced, approves it, comments when something needs to change. The comment is the lever that routes into the learning loop. Not decoration.</li>
+          <li><strong>Campaigns and routines are free:</strong> any operator may create and activate them (<code>/gtm-campaign-start</code>; brief.md exists = active, no gate) and <strong>feed</strong> existing ones &mdash; e.g. push a newsletter into the trending routine.</li>
+          <li>How a fed-in input is handled is decided by the campaign brief, not the operator &mdash; the treatment (react-and-rewrite vs. light touch, which voice, which form) lives in the frame.</li>
+        </ul></div>
+        <div class="card"><h4>Engine owner</h4><ul>
+          <li>The guarded core: <strong>Foundation builds</strong>, <code>settings/gtm-config.yaml</code> and host machine + scheduling are engine_owner-only (<code>settings &gt; subject.engine_owner</code>).</li>
+          <li>Works from <strong>chat</strong>, through the build skills &mdash; never by hand-editing the knowledge. Enforced mechanically: the Foundation write-protection hook blocks every other path (hard block).</li>
+          <li><strong>Host + scheduling stay engine_owner:</strong> the cron-run loops behind the routines start, stop and pause only through the engine_owner (wrapper-skip on the job, never the campaign pause path). Any operator may still open a routine via <code>/gtm-campaign-start</code> &mdash; the guarded part is the machine, not the category.</li>
+          <li>If an operator asks for an engine_owner action, the engine refuses and refers to the engine_owner.</li>
+        </ul></div>
+        <div class="card"><h4>Campaign coordinator</h4><ul>
+          <li>Owns the <strong>portfolio</strong>, never the content: <code>control-panel/_portfolio.md</code> sets hard cross-campaign ceilings (max posts per day, max outreach per person), enforced by the conductor at every run.</li>
+          <li>Synergy overlaps between campaigns escalate to &ldquo;Kr&aelig;ver din beslutning&rdquo; + a coordinator mail ping; the coordinator judges on campaign collision. A new campaign acknowledges a flagged overlap via <code>portfolio_ack</code> in its brief.</li>
+          <li>Assigned in <code>settings &gt; subject.campaign_coordinator</code>.</li>
+        </ul></div>
+      </div>
+      <div class="straddle"><strong>Campaigns and routines are free; what stays guarded is the Subject&rsquo;s knowledge and the engine&rsquo;s wiring.</strong> Anyone with a persona file can open and run a campaign. Only the engine_owner can change what the Subject knows (Foundation), how the engine is wired (settings), where it runs (host/scheduling) &mdash; including whether the routines&rsquo; scheduled jobs run. And <strong>how a fed-in input is handled is decided by the campaign brief, not the operator</strong> &mdash; the operator&rsquo;s action stays dead-simple (&ldquo;send this to campaign X&rdquo;).</div>
+      <div class="hier-note">Prerequisite for &ldquo;everything via the panel&rdquo;: the engine generates each campaign&rsquo;s and routine&rsquo;s content on cadence into the panel <em>by itself</em>, without being asked each time. <code>gtm-campaign-manager</code> reads every active unit&rsquo;s contracts on a schedule (per-job launchd plists: weekdays 09/13/17 + Sat/Sun 20:00), produces what is due through Stage 2&rarr;3 into the panel, delivers approved touches via Unipile (principle 8), and reports status + escalations to <code>control-panel/_campaign-management.md</code> &mdash; anything needing an admin decision surfaces there, not in chat. An event-driven queue-watcher (<code>com.gist.gtm-queue-watch</code>) reacts within minutes to operator edits in the panel &mdash; sync, correction-loop, delivery and ping runs only, never production.</div>
+    </div>
+  </div>
+  <!-- ===================== PART 2 — TECHNICAL ===================== -->
+  <div class="part-banner tech">
+    <div class="tag">Part 2</div>
+    <h2>Technical</h2>
+    <p>Folder layout and the file contracts the engine reads (§2.1&ndash;§2.2).</p>
+  </div>
+
+  <div class="tech">
+    <div class="section">
+      <span class="num">2.1 · Folder structure</span>
+      <h3>Recursive Agentic OS, scoped by the working directory</h3>
+      <p class="lede">The folder you are in IS the Subject. Each Industry and each Account is a self-contained workspace. Stakeholders are leaf files, not folders.</p>
+      <div class="tree">&lt;engine-root&gt;/                          <span class="c">// CWD = engine root for this Subject</span>
+├── <span class="d">foundation/</span>                  <span class="c">// the Subject knowledge the engine reads. Two bodies: company + audience</span>
+│   │
+│   ├── <span class="d">company/</span>                 <span class="c">// who the Subject is (the engine read-surface)</span>
+│   │   ├── brand-voice.md
+│   │   ├── visual.md
+│   │   ├── product.md
+│   │   ├── positioning.md
+│   │   ├── ideal-customer.md
+│   │   ├── <span class="d">proof-points/</span>        <span class="c">// one file per existing customer (evidence only)</span>
+│   │   ├── <span class="d">persona-voices/</span>      <span class="c">// one file per operator voice (canonical home)</span>
+│   │   ├── operating-conventions.md  <span class="c">// instance conventions (operator ping · per-operator language · queue), bound via gtm-config</span>
+│   │   └── _manifest.yaml          <span class="c">// versions, hashes, refresh triggers</span>
+│   │
+│   └── <span class="d">audience/</span>                <span class="c">// the markets/verticals the Subject sells into</span>
+│       └── <span class="d">&lt;industry-slug&gt;/</span>     <span class="c">// Target Industry workspace</span>
+│           ├── vertical-card.yaml  <span class="c">// per-vertical knowledge: status · named customers · ACV band · activation (bindings.vertical_cards; account-cards win on conflict)</span>
+│           ├── ask.md              <span class="c">// materialise-on-demand (see note below)</span>
+│           ├── <span class="d">_corpus/  _background/  marking/</span>  <span class="c">// materialise-on-demand</span>
+│           ├── <span class="d">_generated/</span>       <span class="c">// industry-research.md + content/ for industry-scoped touches</span>
+│           └── <span class="d">accounts/</span>           <span class="c">// account-cards (state) + materialised account workspaces</span>
+│               └── <span class="d">&lt;account-slug&gt;/</span>  <span class="c">// Target Account workspace</span>
+│                   ├── ask.md
+│                   ├── account-card.yaml  <span class="c">// account-STATE: relationship · account_state→motion · expansion_model · outreach posture</span>
+│                   ├── <span class="d">_corpus/  _generated/  marking/</span>
+│                   ├── <span class="d">content/</span>     <span class="c">// account-scoped touches: touch.yaml (source of truth) + render</span>
+│                   └── <span class="d">stakeholders/</span>  <span class="c">// leaf files: vp-trade-marketing.md ...</span>
+│
+├── <span class="d">campaigns/</span>
+│   └── <span class="d">&lt;campaign-slug&gt;/</span>          <span class="c">// one workspace per campaign or routine (same shape; the brief's type decides which: timebound = campaign · ongoing = routine)</span>
+│       ├── brief.md                <span class="c">// strategy: why · who · how · where</span>
+│       ├── campaign-plan.md        <span class="c">// touches · channels · calendar (arc for campaigns · cadence for routines)</span>
+│       ├── project-plan.md         <span class="c">// internal tasks · campaigns only</span>
+│       ├── <span class="d">content/</span>                <span class="c">// one folder per touch: touch.yaml (source of truth) + render</span>
+│       ├── <span class="d">signals/</span>                <span class="c">// trigger inbox (signal-driven campaigns): {date}-candidates.md (## Cleared / ## Skipped) + _handled.yaml</span>
+│       └── <span class="d">_workdocs/  assets/</span>
+│
+├── <span class="d">settings/</span>                    <span class="c">// engine knobs: gtm-config.yaml (operator-tunable wiring), pulled out of company (knobs not knowledge)</span>
+│
+├── <span class="d">control-panel/</span>                       <span class="c">// operator delivery surface: one &lt;operator&gt;.md per operator + _archive/ + _campaign-management.md (the conductor's status + escalations)</span>
+│
+├── <span class="d">tracking/</span>                    <span class="c">// machine-written signal staging; matures here, gated before any promotion to Foundation</span>
+│   ├── <span class="d">performance/</span>            <span class="c">// raw/ (per-post metrics) + paid/ + content-signals.yaml (read by gtm-creative)</span>
+│   ├── <span class="d">engagement/</span>             <span class="c">// pre-account staging (bindings.engagement_staging): log/ · contacts/ · leads/ (gtm-lead-capture) · meetings/ (goal-tracking ledger)</span>
+│   └── <span class="d">notifications/</span>          <span class="c">// ping ledgers (queue + coordinator digests)</span>
+│
+├── <span class="d">_workdocs/</span>                   <span class="c">// sanctioned ad-hoc work-surface: one-offs that belong to no campaign</span>
+│
+└── <span class="d">_temp/</span>                 <span class="c">// disposable engine scratch (gtm-config bindings.working_dir); skills never write elsewhere</span></div>
+      <div class="straddle"><strong>Portable skills, Subject-specific choices.</strong> The same skill runs for any Subject with no change. Anything specific to one Subject (how operator messages are worded, each person's language, queue conventions) lives in the Subject's own files under <code>foundation/company/</code>, and skills point at them via <code>gtm-config</code> instead of hardcoding them. Same for working files: a skill reads pre-existing material read-only and writes all scratch to one dedicated <code>_temp/</code> dir &mdash; never scattering files or cluttering the Subject's drive.</div>
+      <div class="straddle"><strong>The signal layer (<code>tracking/</code>).</strong> A general staging room for what the engine learns <em>while it runs</em> &mdash; machine-written, not hand-edited. Signals mature here, then exit one of two ways: <strong>read directly at runtime</strong> (e.g. <code>content-signals.yaml</code>, a descriptive &ldquo;what works&rdquo; note the content skills reason over &mdash; no gate, self-correcting each cycle), or <strong>promoted into Foundation</strong> (e.g. lead scores into account lists) &mdash; always via a human-approved proposal delegated to the sanctioned build skill, <em>never</em> a direct write. The approval gate sits only on the path <em>into</em> Foundation; collection itself is automatic. Distinct from <code>foundation/company/</code> (skill-write-only, cross-validated motor knowledge) precisely because it is machine-written and overwritten. Tenants: <code>performance/</code> (organic + paid metrics) &middot; <code>engagement/</code> (pre-account engagement staging, captured leads, meetings-ledger) &middot; <code>notifications/</code> (ping ledgers); more added as built.</div>
+      <div class="straddle"><strong>Materialise-on-demand, not required-at-rest.</strong> The drawn per-industry / per-account workspace shape (<code>ask.md</code>, <code>_corpus/</code>, <code>marking/</code>, <code>stakeholders/</code>, <code>content/</code>) is the shape a workspace <em>takes when work happens there</em> &mdash; it is not a structure every vertical must carry at rest. A vertical holding only <code>vertical-card.yaml</code> + <code>accounts/</code> is complete, not a deviation. Today only sporting-goods carries the full research-body folders, and no audience-level <code>ask.md</code> exists anywhere. The thin register in settings (<code>verticals: {id, priority}</code>) says a vertical exists; the vertical-card carries its knowledge; the rest materialises when a campaign or research pass needs it.</div>
+      <div class="straddle"><strong>The media library (<code>bindings.media_library</code>) &mdash; library-first.</strong> A Subject-neutral, Foundation-class image bank living outside the tree above (a Drive folder). The folder itself is human area &mdash; people drop images freely; its machine-readable catalogue <code>{media_library}/INDEX.yaml</code> is a motor artefact: skill-write-only, written with text-surgery via <code>gtm-shared/media_bank.py</code>, never a YAML round-trip. <code>/gtm-media-index</code> builds and refreshes the index. Bank before generation: <code>gtm-creative</code> looks the bank up <em>before</em> generating a new image, and a generated image is admitted to the bank only when the operator approves the post it belongs to.</div>
+      <div class="hier-note">The same engine-root also carries layers that are deliberately <strong>not</strong> the engine-runtime contract above &mdash; kept as separate folders because each serves a different reader, never nested into each other:
+      <br>&bull; <strong>Operator surface</strong> &mdash; <code>control-panel/</code> (in the tree): the queue each operator approves and comments from. Their daily work-surface. (Skills write it; the operator reads it.)
+      <br>&bull; <strong>Instance operating / meta layer</strong> &mdash; <code>ask.md</code> &middot; <code>_admin/</code> &middot; <code>context/</code>: read and written by the cross-cutting <em>meta-skills</em> (session-start, /ask, /note, /handover), never by the GTM runtime. <code>_admin/</code> is the engagement's <strong>history</strong> (engagement-log, sessions, decisions, backlog, reports &mdash; &ldquo;what happened&rdquo;); <code>context/</code> holds <code>learnings.md</code>, operator corrections skills read before running (&ldquo;how to behave&rdquo;) &mdash; the <strong>shared GIST learnings convention</strong> (~80 skills across all GIST work read this path, so it is NOT engine-local and stays put). Different concern, different reader &mdash; that is why <code>_admin/</code>, <code>context/</code> and <code>control-panel/</code> are siblings, not one inside another.
+      <br>&bull; <strong>Plumbing</strong> &mdash; <code>_temp/</code> (disposable scratch, <code>bindings.working_dir</code>); <code>cron/</code> (the <code>ops-cron</code> skill's job + log store: <code>cron/jobs/</code> + <code>cron/logs/</code>, created only once a scheduled job exists &mdash; <em>not</em> part of the base instance shape, not an architecture element); and disposable build scaffolding <code>_non-engine/</code>.
+      <br>None of these is engine-runtime knowledge; they are instance state, meta, and build-time scratch. Siblings outside the engine-root (engine-design blueprints, source material, archive) live one level up and are not Subject state at all.</div>
+    </div>
+
+    <div class="section">
+      <span class="num">2.2 · foundation/company contract</span>
+      <h3>The artefact file shapes</h3>
+      <p class="lede">Every content and channel skill reads from here via CWD walk-up. Nothing about the Subject is hardcoded in any skill. The engine refuses to run if any required artefact is missing or incomplete.</p>
+      <div class="grid2">
+        <div class="card"><h4>brand-voice.md</h4><ul><li>Voice signature, anti-patterns, vocabulary in/out.</li><li>Sentence patterns, per-context calibrations.</li><li>Each claim grounded in a source quote.</li></ul></div>
+        <div class="card"><h4>positioning.md</h4><ul><li>Strategic positioning + competitive frame.</li><li>GTM angles per segment with proof-point binding.</li><li>Don't-say list.</li></ul></div>
+        <div class="card"><h4>ideal-customer.md</h4><ul><li>Firmographic ICP + buyer-role universe.</li><li>Role function (lead/support/exec/influencer/wildcard) + priority rank.</li><li>Segment classification rules.</li></ul></div>
+        <div class="card"><h4>proof-points/</h4><ul><li>One file per customer in proof-point shape.</li><li>Lookalike criteria, quantified results, attributed quotes.</li><li>Outreach angles, GTM-relevance tags.</li></ul></div>
+        <div class="card"><h4>product.md</h4><ul><li>Product / module taxonomy.</li><li>Capability &rarr; outcome mapping.</li><li>Pricing, deployment, proof per capability.</li></ul></div>
+        <div class="card"><h4>visual.md</h4><ul><li>Visual identity: fonts, colours, palette, logo.</li><li>Design judgment for branded assets.</li></ul></div>
+        <div class="card"><h4>persona-voices/</h4><ul><li>One file per operator voice (Jan, Kristian, &hellip;).</li><li>Read by the voice-driven content + channel skills.</li></ul></div>
+        <div class="card"><h4>operating-conventions.md</h4><ul><li>Instance conventions: operator ping format, per-operator language, queue conventions.</li><li>Decided by the Subject's people; skills bind to it via gtm-config, never hardcode it.</li></ul></div>
+        <div class="card"><h4>Extensible per Subject</h4><ul><li>Add <code>regulatory-claims.md</code> or <code>partner-rules.md</code> when relevant.</li><li>Engine functions without them, uses them when present.</li><li><code>_manifest.yaml</code> locks versions + refresh triggers.</li></ul></div>
+      </div>
+      <div class="hier-note"><strong>Not part of this contract: <code>settings/gtm-config.yaml</code>.</strong> The engine's knobs live in <code>settings/</code>, deliberately outside company &mdash; knobs, not knowledge. 13 keys: subject (bare identity + the two authority assignments <code>engine_owner</code> &middot; <code>campaign_coordinator</code>) &middot; cta_strategy &middot; engagement_scoring &middot; verticals (thin register, <code>{id, priority}</code> only &mdash; per-vertical knowledge lives in the vertical-card, §2.1) &middot; bindings &middot; runtime_constraints &middot; performance &middot; queue (incl. <code>presentations</code>: md always-on baseline + opt-in Notion Godkendelseskø per operator) &middot; delivery (Unipile auto-send: per-channel operator gates, per-channel <code>review: auto</code> policy for comments + connects (principle 8), organization id for company posts, per-run pacing caps) &middot; notifications (queue_ping per operator + coordinator_ping for portfolio escalations) &middot; campaign_manager &middot; reporting (management-report landing zone + Notion) &middot; apollo (data-layer scripts + pacing caps; API key local, CSV fallback). No cadence and no channel register &mdash; cadence, channel mix and budgets are campaign-brief truths; format limits live in each channel executor; the operator roster IS <code>persona-voices/</code> (one file = one operator).</div>
+    </div>
+
+
+  </div>
+
+  <div class="context-box" style="margin-top:40px;">
+    <p><strong>Source of truth.</strong> The single reference for the engine architecture, carrying the <strong>engine overview</strong> (Concept) and <strong>§2.1&ndash;§2.2</strong> (Technical). The industry- and account-reference contracts (§2.3&ndash;§2.4) are not part of this document; they live in the archived v3.2 until a rework lands. The domain-neutral distillation of this architecture lives in the companion doc <code>engine-blueprint.html</code> (same folder).</p>
+    <p><strong>Konvention.</strong> Dette dokument beskriver NUTIDEN. Ingen datoer ud over topdatoen, ingen build-status eller badges, ingen f&oslash;r/efter- eller &ldquo;siden&rdquo;-formuleringer. Historik bor i <code>_admin/decisions/</code> og engagement-loggen, k&oslash;rsels-status i statusdokumentet (<code>_admin/reports/</code>), gaps i build-k&oslash;en. En &aelig;ndring af arkitekturen skrives ind som ren nutidsbeskrivelse.</p>
+  </div>
+
+  <div class="footer">GTM Engine — Architecture Model · v3.3 · Senest opdateret 2026-08-13<br>Concept = engine overview (by stage) · Technical = §2.1–§2.2 · Companion: engine-blueprint.html (the domain-neutral pattern) · Tidligere versioner (inkl. v3.2 med §2.3–§2.4) ligger i arkivet.</div>
+
+</div>
+</body>
+</html>
