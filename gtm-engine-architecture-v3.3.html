@@ -745,6 +745,53 @@
   </section>
 
     <div class="section">
+      <span class="num">Paid</span>
+      <h3>The paid track &mdash; the engine writes the spec, a human launches it</h3>
+      <p class="lede">Paid runs the same Stage 1&rarr;4 spine as everything else, with one deliberate difference at the end: <strong>nothing goes live on the engine&rsquo;s authority.</strong> Four channels are reachable &mdash; LinkedIn, Google, Meta and Microsoft &mdash; through one shared executor form, so a new paid channel is a stamp, not a project.</p>
+
+      <div class="grid2">
+        <div class="card"><h4>From brief to launch spec</h4><ul>
+          <li>The campaign brief carries the paid targeting alongside everything else specific to the campaign &mdash; audience, budget frame, the offer. No global paid settings; a budget is a campaign truth.</li>
+          <li>Stage 2 builds the asset kit: <code>gtm-copywriting</code> writes slot-copy to the channel&rsquo;s own format spec, the creative comes from the media library or is generated to pixel spec.</li>
+          <li>Stage 3&rsquo;s ads executor validates the copy against the channel&rsquo;s owned format, mechanic and threshold spec, then writes <code>launch-spec.yaml</code> &mdash; one <code>ad_set</code> per A/B cell &mdash; plus a paid item in the operator&rsquo;s queue. <strong>It uploads nothing.</strong></li>
+        </ul></div>
+        <div class="card"><h4>The approval triad</h4><ul>
+          <li>A paid queue item carries three checkboxes instead of the content triad: <b>Godkend copy</b> &middot; <b>Godkend targeting + budget</b> &middot; <b>Launched</b>. Copy and money are separate approvals because they are separate risks.</li>
+          <li>The item stays OPEN until <em>all three</em> are ticked &mdash; the ads executor&rsquo;s done-condition, and the one place the queue&rsquo;s counting rule differs from a content touch.</li>
+          <li><code>launch-spec.yaml</code>&rsquo;s <code>status: live</code> + <code>launched_at</code> is the field every reader keys off. Whether the operator launched by hand and ticked the box, or the assisted build step ran, both paths converge on that one field.</li>
+        </ul></div>
+        <div class="card"><h4>Money is data, never a live lookup</h4><ul>
+          <li>The whole paid contract reckons in EUR (<code>daily_budget_eur</code>, <code>spend_eur</code>, <code>cpl_eur</code>), but an ad account has its own currency.</li>
+          <li>The account currency and the rate both live in config as <em>data</em>; conversion happens in exactly one place, on the way out (budget) and on the way in (reporting). A cell carries both its account figure and the EUR conversion, so the verdict compares like with like.</li>
+          <li>A non-EUR account with no rate configured is a loud failure, never a silent 1:1 assumption.</li>
+        </ul></div>
+        <div class="card"><h4>Measure, judge, propose</h4><ul>
+          <li>Ad metrics land in <code>tracking/performance/paid/</code>. The read contract is a yaml file, so the source can graduate from a manual export to the platform API without anything downstream changing.</li>
+          <li>The weekly verdict is deliberately narrow: only cells with meaningful spend are judged, cost-per-lead is the primary metric with click-through as tiebreak, and a clear loser is one costing at least twice the best cell. No leads anywhere means no verdict &mdash; the engine stays quiet rather than inventing signal.</li>
+          <li>A loser becomes a <em>rotation proposal</em> in the queue: a recommendation to pause, plus pointers to the new variants. <strong>Nothing rotates, pauses or launches itself.</strong></li>
+          <li>Inbound leads from the platforms&rsquo; lead forms are captured per campaign; spam is marked with a reason and kept, never deleted, so the lead count stays honest.</li>
+        </ul></div>
+      </div>
+      <div class="straddle"><strong>Why the human stays in the launch step.</strong> Every other channel can be reversed cheaply &mdash; a post is deleted, a message is a message. A live campaign spends money against a targeting choice, and the cost of a wrong one compounds silently. So the engine does all the work up to the button and stops there, on purpose.</div>
+    </div>
+
+    <div class="section">
+      <span class="num">ABM</span>
+      <h3>The account track &mdash; from one qualified company to several people inside it</h3>
+      <p class="lede">Broad campaigns talk to a market; the account track talks to <strong>one company at a time</strong>, and then to several people inside it in a deliberate order. It reuses the same Foundation, the same Stage 2&rarr;3 machinery and the same queue &mdash; what differs is that the unit of work is an account, and accounts belong to industries (principle 4).</p>
+
+      <div class="funnel">
+        <div class="fstage"><div class="fn">1</div><div><strong>Qualify</strong><span>The account is judged against Foundation and either qualified or explicitly disqualified &mdash; a disqualification is recorded, not forgotten, so the same company is not re-litigated every quarter. Qualification can be asked for by a person, or triggered when accumulated engagement crosses the configured threshold: someone the engine keeps meeting becomes someone worth a decision.</span></div></div>
+        <div class="fstage"><div class="fn">2</div><div><strong>Materialise the workspace</strong><span>A qualified account gets a folder under its industry: <code>account-card.yaml</code> holding the account STATE &mdash; relationship, <code>account_state&rarr;motion</code>, expansion model, outreach posture &mdash; a readable card, a stakeholder map, and leaf files per named stakeholder. The state field is what keeps the engine from cold-pitching a company it already serves.</span></div></div>
+        <div class="fstage"><div class="fn">3</div><div><strong>Build the playbook</strong><span>The account playbook is written on top of the industry layer, never instead of it: it reads the vertical&rsquo;s one canonical industry synthesis and produces exactly one file &mdash; the account&rsquo;s angle, its stakeholders&rsquo; messaging, the proof that fits this company. One file, so there is never a second competing account story.</span></div></div>
+        <div class="fstage"><div class="fn">4</div><div><strong>Sequence the people</strong><span>The multithread plan turns the playbook into a time-sequenced, multi-stakeholder outreach plan: a handful of stakeholders contacted in a staggered order across connect, DM, comment and email, so an account is approached as one coordinated motion instead of four unrelated messages landing the same morning.</span></div></div>
+        <div class="gate">&darr; the plan becomes ordinary touches &darr;</div>
+        <div class="fstage"><div class="fn">5</div><div><strong>Execute through the normal spine</strong><span>Each planned touch is produced by Stage 2 and assembled by its Stage-3 channel executor exactly like campaign work: same voice gate, same humanizer, same operator queue, same delivery gating and pacing caps. The account track buys the <em>targeting and the order</em>, not a private set of rules.</span></div></div>
+      </div>
+      <div class="straddle"><strong>Existing customers are a surface, not an exclusion.</strong> The motion carried on the account card decides the approach: a deployed customer is an expansion conversation owned by sales, a market where the brand is already live elsewhere is warm, and only a true non-customer is cold. Nothing in the account track opens a cold pitch to a company that is already a customer.</div>
+    </div>
+
+    <div class="section">
       <span class="num">Roles</span>
       <h3>Roles and authority &mdash; campaigns and routines are free, the Foundation is guarded</h3>
       <p class="lede">The engine is operated by named <strong>operators</strong> &mdash; the roster IS <code>foundation/company/persona-voices/</code> (one file = one operator) &mdash; with two authority roles layered on top. <span style="color:#6b7280;">(Full convention: <code>foundation/company/operating-conventions.md &gt; Roller og myndighed</code>; operator machine setup: OPERATORS.md in the skills repo.)</span></p>
