@@ -411,7 +411,13 @@
               <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-linkedin-comment</span>
               <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-linkedin-dm</span>
               <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-direct-mail</span>
-              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-landing-page</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-google-ads</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-meta-ads</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-microsoft-ads</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-email-newsletter</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-instagram-* (5)</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-facebook-* (3)</span>
+              <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-messenger-reply</span>
               <span style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#7ee0a8;background:rgba(126,224,168,0.08);border:1px solid rgba(126,224,168,0.2);border-radius:5px;padding:2px 7px;">/gtm-channel-{x} · template</span>
             </div>
             <div style="font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Review surface <span style="color:#4a4d5a;font-weight:600;">· cross-channel, constant</span></div>
@@ -526,7 +532,7 @@
 
         <div>
           <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">8 &middot; Delivery is automatic &mdash; gated by approval, or by an explicit per-channel auto-policy</div>
-          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 8px;">A deliverable touch auto-sends via <b>Unipile</b> through the conductor&rsquo;s delivery step (Step 4b), using the send scripts in <code>gtm-shared/unipile/</code>. <b>Seven channels</b>: personal post &middot; company post &middot; connect &middot; DM &middot; comment &middot; email &middot; physical direct mail. Direct mail is assembled by the engine but <em>always delivered by a human</em> &mdash; print and post is a manual act, so the channel has no <code>delivery</code> block at all. Gating is deterministic and fail-closed: <code>settings &gt; delivery</code> decides per channel which operators auto-send (absent section = everything stays manual); company posts carry the organization id; per-run pacing caps protect the accounts.</p>
+          <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 8px;">A deliverable touch auto-sends via <b>Unipile</b> through the conductor&rsquo;s delivery step (Step 4b), using the send scripts in <code>gtm-shared/unipile/</code>. <b>Six channels auto-send</b>: personal post &middot; company post &middot; connect &middot; DM &middot; comment &middot; email. A further set is assembled by the engine but <em>always delivered by a human</em>, because the act itself is manual or the platform is not plumbed for sending: physical direct mail (print and post), the email newsletter (sent from the operator's own mail tool), and the organic Meta family &mdash; Instagram post/carousel &middot; story &middot; reel &middot; DM &middot; comment, Facebook post &middot; story &middot; reel, and Messenger reply. Those channels carry no <code>delivery</code> block at all; for them the posted-checkbox means the operator did it. <b>Paid is its own track</b> with four channels (LinkedIn &middot; Google &middot; Meta &middot; Microsoft): the engine writes the launch spec and the operator launches it, never the engine. Gating is deterministic and fail-closed: <code>settings &gt; delivery</code> decides per channel which operators auto-send (absent section = everything stays manual); company posts carry the organization id; per-run pacing caps protect the accounts.</p>
           <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0 0 8px;"><b>Approval is not the only trigger.</b> The small touches &mdash; <b>comments and connects</b> &mdash; carry <code>review: auto</code> in <code>settings &gt; delivery</code> and send <em>without</em> operator approval, each with a kill-switch (remove the line and everything on the channel needs the checkbox again, including auto-stamped items already queued), a reject option and a pre-approved new-version path in the queue. Posts, company posts, DMs and email remain approval-gated (&ldquo;Jeg godkender indholdet&rdquo;). The engine never writes <code>approved: true</code> itself &mdash; a human approval or the explicit auto-policy is the only path to a send, and every other gate (voice, humanizer, suppression, pacing, portfolio caps) is unchanged on auto channels. Only the engine_owner may change the auto-policy.</p>
           <p style="font-size:13.5px;color:#cdd2dd;line-height:1.6;margin:0;"><b>Wrong-target gate:</b> every Unipile send verifies author/recipient identity against the source object before it fires &mdash; URNs are taken only from the post object, never reconstructed. Idempotent: a touch that already carries a Unipile id is never re-sent. HEIC images convert on the fly to a deliverable jpg in engine scratch (<code>_temp/</code>). Reads follow the same discipline: <b>Unipile-first read policy</b> &mdash; wherever the adapter endpoint exists, skills read through it; Chrome is a documented, flagged fallback only, never primary, never silent.</p>
         </div>
@@ -618,6 +624,7 @@
         <div class="sk"><code>gtm-pptx-design</code><span class="exp">— Decks: branded slides and carousels</span></div>
         <div class="sk"><code>gtm-nano-banana</code><span class="exp">— Images: generates to pixel spec from an art brief</span></div>
         <div class="sk"><code>gtm-humanizer</code><span class="exp">— De-AI: removes AI-sounding language</span></div>
+                <div class="sk"><code>gtm-content-repurposing</code><span class="exp">— Turns one piece of content into the other channels' versions</span></div>
         <div class="sk"><code>gtm-copy-review</code><span class="exp">— Reviews queue drafts against the copywriting rubric: quotes, severity, verdict — approved / needs-fix / rejected</span></div>
       </div>
       <div class="sg-grp">Handoff contract · the Stage-2 artefact frontmatter (six keys)</div>
@@ -637,6 +644,19 @@
         <div class="sk"><code>gtm-channel-linkedin-comment</code><span class="exp">— Prepares a comment on someone's post (auto-review channel)</span></div>
         <div class="sk"><code>gtm-channel-linkedin-dm</code><span class="exp">— Prepares the LinkedIn DM</span></div>
         <div class="sk"><code>gtm-channel-direct-mail</code><span class="exp">— Prepares personalised physical mail: letter + optional enclosure (verified-address contract, delivery always manual, cross-channel registration when the letter is marked sent)</span></div>
+        <div class="sk"><code>gtm-channel-email-newsletter</code><span class="exp">— Prepares the newsletter to the Subject's own list (sent from the operator's mail tool)</span></div>
+        <div class="sk"><code>gtm-channel-instagram-post</code><span class="exp">— Prepares the Instagram feed post; two or more images makes it a carousel</span></div>
+        <div class="sk"><code>gtm-channel-instagram-story</code><span class="exp">— Prepares the Instagram story</span></div>
+        <div class="sk"><code>gtm-channel-instagram-reel</code><span class="exp">— Prepares the Instagram reel around the operator's own recording</span></div>
+        <div class="sk"><code>gtm-channel-instagram-dm</code><span class="exp">— Prepares the DM from the brand handle</span></div>
+        <div class="sk"><code>gtm-channel-instagram-comment</code><span class="exp">— Prepares a comment on a named Instagram post</span></div>
+        <div class="sk"><code>gtm-channel-facebook-post</code><span class="exp">— Prepares the Facebook page post</span></div>
+        <div class="sk"><code>gtm-channel-facebook-story</code><span class="exp">— Prepares the Facebook page story</span></div>
+        <div class="sk"><code>gtm-channel-facebook-reel</code><span class="exp">— Prepares the Facebook page reel</span></div>
+        <div class="sk"><code>gtm-channel-messenger-reply</code><span class="exp">— Prepares the Messenger inbox answer</span></div>
+        <div class="sk"><code>gtm-channel-google-ads</code><span class="exp">— Writes the Google Ads launch spec (Search first-class, every campaign type reachable)</span></div>
+        <div class="sk"><code>gtm-channel-meta-ads</code><span class="exp">— Writes the Meta paid launch spec (Facebook/Instagram, every objective and format)</span></div>
+        <div class="sk"><code>gtm-channel-microsoft-ads</code><span class="exp">— Writes the Microsoft Advertising launch spec (stamped on the Google executor)</span></div>
         <div class="sk"><code>gtm-linkedin-post</code><span class="exp">— Ad-hoc one-off posts only; campaign posts go via gtm-creative → gtm-channel-linkedin-post</span></div>
         <div class="sk"><code>gtm-linkedin-connect</code> · <code>gtm-linkedin-message</code> · <code>gtm-email-outbound</code><span class="exp">— Ad-hoc one-off outreach only; campaign work goes via gtm-creative → the stamped gtm-channel-* executors</span></div>
         <div class="sk"><code>gtm-channel-executor-template</code><span class="exp">— The mould new channels are stamped from (proven: connect · email · comment · DM). A template in the engine repo (<code>templates/</code>), not an installed skill</span></div>
@@ -656,6 +676,7 @@
         <div class="sk"><code>gtm-linkedin-comment</code><span class="exp">— Writes a comment on someone's post (ad-hoc only; campaign comments go via gtm-creative → gtm-channel-linkedin-comment)</span></div>
         <div class="sk"><code>gtm-linkedin-post-engage</code><span class="exp">— Tracks who engages with your own posts; also runs headless as the daily sense routine (08:30, all connected operators, person-suppression gate)</span></div>
         <div class="sk"><code>gtm-linkedin-reply-comments</code><span class="exp">— Replies to comments on your posts</span></div>
+                <div class="sk"><code>gtm-email-reply</code><span class="exp">— Handles incoming replies to the engine's outbound emails</span></div>
         <div class="sk"><code>gtm-linkedin-new-follower-welcome</code><span class="exp">— Welcomes new followers</span></div>
       </div>
     </div>
@@ -674,6 +695,8 @@
       <div class="sg-cols">
         <div class="sk"><code>gtm-engagement-scoring</code><span class="exp">— Scores how warm each contact is</span></div>
         <div class="sk"><code>gtm-account-qualifier</code><span class="exp">— Re-checks accounts as they heat up</span></div>
+                <div class="sk"><code>gtm-aeo-monitor</code><span class="exp">— Measures the Subject's visibility in AI-engine answers for the buyer questions</span></div>
+        <div class="sk"><code>gtm-job-change-scan</code><span class="exp">— Spots job changes among known contacts — the highest-rated outbound signal</span></div>
         <div class="sk"><code>gtm-lead-capture</code><span class="exp">— Captures inbound leads (paid Lead Gen Forms and others) into <code>tracking/engagement/leads/</code>, with spam classification</span></div>
       </div>
       <div class="sg-grp">Reporting + memory</div>
@@ -699,6 +722,20 @@
         <b style="color:#e8eaf2;">Goal tracking</b>: meetings are registered from the queue (&ldquo;Registr&eacute;r m&oslash;de&rdquo;, queue v4.3) into a meetings-ledger (<code>tracking/engagement/meetings/</code>); the conductor reports progress against the brief&rsquo;s targets and escalates off-trajectory campaigns pro-rata. Paid gets the same loop: CSV-ingested ad metrics, a weekly loser-verdict and rotation proposals in the queue.<br>
         <b style="color:#e8eaf2;">Routines</b> (the second category of running work, principle 1; beside the conductor&rsquo;s cadence): post-engage harvests engagement on the operators&rsquo; own posts daily at 08:30 (all connected operators, person-suppression gate); saved-posts reads each connected operator&rsquo;s own Saved list 3&times;/weekday (08:45 &middot; 12:45 &middot; 16:45) and drafts a comment for every save; industry-trending turns the nightly trending scan into queued reactions; voice-learn runs weekly (Thursdays); new-follower welcome runs Tuesday + Thursday mornings (fail-closed).<br>
         <b style="color:#e8eaf2;">Pause is two mechanisms</b>: a <em>campaign</em> pauses via <code>gtm-campaign-pause</code>/<code>-resume</code> (production stops, produced-unapproved touches move to a Pauset view, approval resets on resume, the operator chooses push-or-drop for the arc; a pause expiry raises a decision, never a headless restart) &mdash; authority: campaign owner / coordinator. A <em>routine</em> pauses via a wrapper-skip on its job &mdash; authority: engine_owner only.
+      </div>
+    </div>
+
+    <!-- Cross-stage: running the engine itself -->
+    <div class="sg-card" style="border-left-color:#fbbf24">
+      <div class="sg-h" style="color:#fbbf24">Cross-stage · running the engine itself</div>
+      <div class="sg-title">Standing an instance up, keeping it healthy, moving it forward</div>
+      <div class="sg-sub">Not part of a campaign's flow: the skills that make the engine reproducible at another Subject and keep a running one honest.</div>
+      <div class="sg-cols">
+        <div class="sk"><code>gtm-install</code><span class="exp">— Stands a new Subject's instance up, or re-homes an existing one</span></div>
+        <div class="sk"><code>gtm-update</code><span class="exp">— Brings an installed instance up to the engine's current state, step by numbered step</span></div>
+        <div class="sk"><code>gtm-doctor</code><span class="exp">— Read-only health check of the whole runtime chain</span></div>
+        <div class="sk"><code>gtm-skill-map</code><span class="exp">— Introspects what is actually installed and maps it to the stages</span></div>
+        <div class="sk"><code>gtm-people-onboard</code><span class="exp">— Onboards one more person onto a running instance, role and setup included</span></div>
       </div>
     </div>
 
