@@ -106,7 +106,7 @@
   <div class="header">
     <div class="logo">gtm engine</div>
     <h1>Architecture Model</h1>
-    <div class="date">Senest opdateret 2026-08-17 · source of truth</div>
+    <div class="date">Senest opdateret 2026-08-26 · source of truth</div>
     <div class="vbadge">v3.3</div>
   </div>
 
@@ -502,6 +502,8 @@
 │   │   ├── operating-conventions.md  <span class="c">// instance conventions (operator ping · per-operator language · queue), bound via gtm-config</span>
 │   │   └── _manifest.yaml          <span class="c">// versions, hashes, refresh triggers</span>
 │   │
+│   ├── <span class="d">raw-input/</span>               <span class="c">// the customer's own raw material (human-written or verbatim-captured, never derived, never edited by engine skills; bound via bindings.raw_input): erfaringsarkiv/&lt;operator&gt;.md — build skills read from here, the rest of foundation/ is the derivate</span>
+│   │
 │   └── <span class="d">audience/</span>                <span class="c">// the markets/verticals the Subject sells into</span>
 │       └── <span class="d">&lt;industry-slug&gt;/</span>     <span class="c">// Target Industry workspace</span>
 │           ├── vertical-card.yaml  <span class="c">// per-vertical knowledge: status · named customers · ACV band · activation (bindings.vertical_cards; account-cards win on conflict)</span>
@@ -517,12 +519,14 @@
 │                   └── <span class="d">stakeholders/</span>  <span class="c">// leaf files: vp-trade-marketing.md ...</span>
 │
 ├── <span class="d">campaigns/</span>
-│   └── <span class="d">&lt;campaign-slug&gt;/</span>          <span class="c">// one workspace per campaign or routine (same shape; the brief's type decides which: timebound = campaign · ongoing = routine)</span>
+│   ├── <span class="d">_adhoc/</span>                   <span class="c">// one-off touches with no owner (a single told comment/connect/DM): &lt;operator&gt;/content/&lt;touch-slug&gt;/touch.yaml — no brief.md, never counted as a campaign, queued under "Øvrigt"</span>
+│   └── <span class="d">&lt;campaign-slug&gt;/</span>          <span class="c">// one workspace per campaign or routine (same shape; the brief's type decides which: timebound = campaign · ongoing = routine — every routine owns its touches here, none write outside campaigns/)</span>
 │       ├── brief.md                <span class="c">// strategy: why · who · how · where</span>
 │       ├── campaign-plan.md        <span class="c">// touches · channels · calendar (arc for campaigns · cadence for routines)</span>
 │       ├── project-plan.md         <span class="c">// internal tasks · campaigns only</span>
 │       ├── <span class="d">content/</span>                <span class="c">// one folder per touch: touch.yaml (source of truth) + render</span>
 │       ├── <span class="d">signals/</span>                <span class="c">// trigger inbox (signal-driven campaigns): {date}-candidates.md (## Cleared / ## Skipped) + _handled.yaml</span>
+│       ├── <span class="d">_source/</span>                <span class="c">// the campaign's canonical source-material home: everything imported at intake or supplied later (copies, never links); provenance noted in the brief</span>
 │       └── <span class="d">_workdocs/  assets/</span>
 │
 ├── <span class="d">settings/</span>                    <span class="c">// engine knobs: gtm-config.yaml (operator-tunable wiring), pulled out of company (knobs not knowledge)</span>
@@ -548,7 +552,7 @@
     <p><strong>Konvention.</strong> Dette dokument beskriver NUTIDEN. Ingen datoer ud over topdatoen, ingen build-status eller badges, ingen f&oslash;r/efter- eller &ldquo;siden&rdquo;-formuleringer. Historik bor i <code>_admin/decisions/</code> og engagement-loggen, k&oslash;rsels-status i statusdokumentet (<code>_admin/reports/</code>), gaps i build-k&oslash;en. En &aelig;ndring af arkitekturen skrives ind som ren nutidsbeskrivelse.</p>
   </div>
 
-  <div class="footer">GTM Engine — Architecture Model · v3.3 · Senest opdateret 2026-08-17<br>Concept = engine overview (by stage) · Technical = §2.1 · Companion: engine-blueprint.html (the domain-neutral pattern) · Industry-/account-referencekontrakterne: docs/design/industry-account-reference-contract.md · Tidligere versioner ligger i arkivet.</div>
+  <div class="footer">GTM Engine — Architecture Model · v3.3 · Senest opdateret 2026-08-26<br>Concept = engine overview (by stage) · Technical = §2.1 · Companion: engine-blueprint.html (the domain-neutral pattern) · Industry-/account-referencekontrakterne: docs/design/industry-account-reference-contract.md · Tidligere versioner ligger i arkivet.</div>
 
 </div>
 </body>
