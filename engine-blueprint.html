@@ -55,7 +55,7 @@
     <div class="logo">engine blueprint</div>
     <h1>The Engine Pattern</h1>
     <div class="subtitle">The reusable blueprint for building engines in any domain</div>
-    <div class="date">Distilled from gtm-engine-architecture-v3.2 · 2026-07-24</div>
+    <div class="date">Distilled from gtm-engine-architecture-v3.3 · 2026-09-30</div>
   </div>
 
   <div class="context-box">
@@ -113,7 +113,9 @@
       <ul>
         <li><strong>The approval queue as the single meeting point.</strong> The engine produces, the human approves in one surface, and nothing goes out without approval where it matters.</li>
         <li><strong>Approval has one home.</strong> One field in one file is the truth about &ldquo;approved&rdquo;; everything else is a mirror. No double bookkeeping.</li>
-        <li><strong>The learning loop.</strong> The human&rsquo;s corrections graduate into Foundation via skills, so the engine gets better from being corrected instead of repeating the mistake.</li>
+        <li><strong>The approval surface is a window, not a system.</strong> The human meets the engine in a small app: a list, a card, four choices (approve, fix, reject, I posted it), a thread. The app produces, plans and sends nothing; the files stay the truth, and the answers are pulled back into them within minutes.</li>
+        <li><strong>Corrections become rules deliberately.</strong> Every correction is registered verbatim and typed; no text version is ever deleted. A correction that carries a general rule is shown back to the human as a rule proposal with a yes/no, and only a yes writes it into Foundation. The loop is measured: the share of drafts corrected, and the share that got a reply.</li>
+        <li><strong>Decisions are data.</strong> Whatever needs a human decision is a post in one register: the situation, the problem, one question, two to four choices with their consequence, a recommendation with a &ldquo;because&rdquo;, and what happens if nobody answers. The register renders to every surface, and the engine executes what was decided.</li>
         <li><strong>Roles and authority.</strong> Owner, coordinator and operators with clear boundaries for who may do what. Scales from one person to a team.</li>
         <li><strong>Portfolio management.</strong> Hard ceilings and overlap checks across active initiatives, so multiple initiatives do not cannibalise each other.</li>
       </ul>
@@ -124,9 +126,11 @@
       <h4>Why the output is good</h4>
       <ul>
         <li><strong>Two-layer voice.</strong> Voices are separate artefacts layered on top of each other: company + person (the operator sounds like themselves, grounded in the company&rsquo;s voice) or company + brand (the company writes as itself, but within a brand&rsquo;s guidelines). All output sounds like a human, not like &ldquo;the system&rdquo;.</li>
+        <li><strong>Read before writing.</strong> The writer does not read the raw knowledge base; it reads a pack built for the task: relevance cards per source, essence cards for the company, the recipient, the sender and the initiative, and a block of what must always be included. It fills a schema that states what it knows, and it may answer &ldquo;I don&rsquo;t know&rdquo; or &ldquo;nothing to say&rdquo; instead of writing.</li>
+        <li><strong>Judge before queueing.</strong> A second reader with access to the sources judges every draft (right person, right problem, true, form, ending) before the human sees it. A gold set of examples the human has starred is the yardstick: it calibrates the reader and runs as a regression at every engine change.</li>
         <li><strong>Voice gate on all output.</strong> Nothing leaves the production layer without being checked against the voice profile and its anti-patterns.</li>
         <li><strong>Humanizer as a fixed step.</strong> The de-AI pass is part of the contract, not an afterthought.</li>
-        <li><strong>Recipient verification before sending.</strong> The engine double-checks that what it sends goes to the right person. Never the wrong one.</li>
+        <li><strong>Recipient verification before sending.</strong> The engine double-checks that what it sends goes to the right person. Never the wrong one. Before writing, a person gate sorts the recipient as relation, peer or lead, and only a lead gets a draft.</li>
       </ul>
     </div>
 
@@ -148,6 +152,7 @@
         <li><strong>Auto-delivery with per-channel gates.</strong> Approved output is delivered automatically; each channel has its own gate that can be opened gradually as trust grows.</li>
         <li><strong>Write boundaries enforced by hooks.</strong> Knowledge artefacts cannot be hand-edited, and engine code cannot be changed outside the build discipline. Discipline is code, not agreements.</li>
         <li><strong>Migrations register + versioning.</strong> Every installed instance is updated with numbered, idempotent steps. One engine core, several instances, all in sync.</li>
+        <li><strong>Run as a fleet.</strong> An instance carries its own installation profile (host, jobs, integrations, operators), and the profile is the contract for what runs. Every instance reports home each night through the shared app with its own key; a watchdog reports repeated failures, a closed machine is not an error, and a read-only doctor and an install gate turn every gap into a task with an owner and a date.</li>
         <li><strong>Build queue.</strong> Ideas are captured as specs and built serially in a dedicated build session, so development never disturbs operations.</li>
       </ul>
     </div>
@@ -168,7 +173,7 @@
 
   <div class="consequence"><strong>The consequence:</strong> a new engine is a new Foundation plus a selection of channels, not a new system. The mechanics, the discipline and the learning loops come along from day one.</div>
 
-  <div class="footer">Engine Blueprint · domain-neutral pattern distilled from the GTM Engine architecture (gtm-engine-architecture-v3.2.html) · 2026-07-24</div>
+  <div class="footer">Engine Blueprint · domain-neutral pattern distilled from the GTM Engine architecture (gtm-engine-architecture-v3.3.html) · 2026-09-30</div>
 
 </div>
 </body>
